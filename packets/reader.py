@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import struct
 from typing import Iterator
+from typing import TYPE_CHECKING
 
-from packets.typing import PacketHandler
+from constants.packets import Packets
+
+if TYPE_CHECKING:
+    from packets.typing import PacketHandler
 
 
-def parse_header(data: memoryview) -> tuple[int, int]:
+def parse_header(data: bytearray) -> tuple[int, int]:
     header = data[:7]
     data = struct.unpack("<HxI", header)
 
@@ -14,7 +18,7 @@ def parse_header(data: memoryview) -> tuple[int, int]:
 
 
 class Packet:
-    def __init__(self, data: memoryview) -> None:
+    def __init__(self, data: bytearray) -> None:
         self.data = data
 
         self.packet_id: int = 0
@@ -36,7 +40,11 @@ class Packet:
 
 
 class PacketArray:
-    def __init__(self, data: memoryview, packet_map: dict[int, PacketHandler]) -> None:
+    def __init__(
+        self,
+        data: bytearray,
+        packet_map: dict[Packets, PacketHandler],
+    ) -> None:
         self.data = data
         self.packets: list[Packet] = []
         self.packet_map = packet_map

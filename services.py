@@ -7,12 +7,15 @@ import logging
 import aiohttp
 import aioredis
 import databases
+import geoip2.database
 
 import settings
 
 http: aiohttp.ClientSession
 database: databases.Database
 redis: aioredis.Redis
+
+geolocation: geoip2.database.Reader = geoip2.database.Reader("ext/geoloc.mmdb")
 
 tasks: set[asyncio.Task] = set()
 
