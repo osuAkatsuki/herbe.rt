@@ -1,0 +1,64 @@
+from __future__ import annotations
+
+import struct
+from typing import Iterator
+
+from packets.typing import PacketHandler
+
+
+def parse_header(data: memoryview) -> tuple[int, int]:
+    header = data[:7]
+    data = struct.unpack("<HxI", header)
+
+    return data[0], data[1]  # packet id, length
+
+
+class Packet:
+    def __init__(self, data: memoryview) -> None:
+        self.data = data
+
+        self.packet_id: int = 0
+        self.length: int = 0
+
+        self.read_header()
+
+    def read_header(self) -> None:
+        self.packet_id, self.length = parse_header(self.data)
+
+    def offset(self, count: int) -> None:
+        self.data = self.data[count:]
+
+    def read(self, count: int) -> bytearray:
+        data = self.data[:count]
+        self.offset(count)
+
+        return data
+
+
+class PacketArray:
+    def __init__(self, data: memoryview, packet_map: dict[int, PacketHandler]) -> None:
+        self.data = data
+        self.packets: list[Packet] = []
+        self.packet_map = packet_map
+
+        self._split_data()
+
+    def __iter__(self) -> Iterator[tuple[Packet, PacketHandler]]:
+        for packet in self.packets:
+            handler = self.packet_map[packet.packet_id]
+
+            yield packet, handler
+
+    def _split_data(self) -> None:
+        while self.data:
+            packet_id, length = parse_header(self.data)
+
+            if packet_id not in self.packet_map.keys():
+                self.data = self.data[7 + length :]
+                continue
+
+            packet_data = self.data[: 7 + length]
+            packet = Packet(packet_data)
+            self.packets.append(packet)
+
+            self.data = self.data[7 + length :]
