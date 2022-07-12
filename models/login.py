@@ -20,5 +20,5 @@ class LoginData:
 
 @dataclass
 class LoginResponse:
-    body: bytes
+    body: bytearray
     token: str = "no"

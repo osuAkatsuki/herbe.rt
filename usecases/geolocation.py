@@ -6,7 +6,7 @@ import services
 from models.geolocation import Country
 from models.geolocation import Geolocation
 
-GEOLOCATION: dict[str, Geolocation]
+CACHE: dict[str, Geolocation] = {}
 
 
 def from_headers(headers: dict[str, str]) -> Geolocation:
@@ -18,19 +18,19 @@ def from_headers(headers: dict[str, str]) -> Geolocation:
         else:
             ip = headers["X-Real-IP"]
 
-    if not (geoloc := GEOLOCATION.get(ip)):
-        city = services.geolocation.city(ip)
+    if geolocation := CACHE.get(ip):
+        return geolocation
 
-        iso_code = city.country.iso_code.lower()
-        country = Country.from_iso(iso_code)
+    city = services.geolocation.city(ip)
 
-        geolocation = Geolocation(
-            city.location.longitude,
-            city.location.latitude,
-            country,
-            ip,
-        )
+    iso_code = city.country.iso_code.lower()
+    country = Country.from_iso(iso_code)
 
-        GEOLOCATION[ip] = geoloc
+    geolocation = Geolocation(
+        city.location.longitude,
+        city.location.latitude,
+        country,
+        ip,
+    )
 
     return geolocation
