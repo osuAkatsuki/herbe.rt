@@ -14,6 +14,7 @@ from fastapi import Response
 
 import repositories.accounts
 import repositories.channels
+import repositories.icons
 import repositories.sessions
 import repositories.stats
 import settings
@@ -142,7 +143,10 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
         await usecases.sessions.join_channel(session, channel)
 
     data += usecases.packets.channel_info_end()
-    data += usecases.packets.menu_icon("", "")  # TODO
+
+    icon = await repositories.icons.fetch_random()
+    data += usecases.packets.menu_icon(icon.image_url, icon.click_url)
+
     data += usecases.packets.friends_list(session.friends)
     data += usecases.packets.silence_end(session.silence_expire)
 
