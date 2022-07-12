@@ -115,6 +115,8 @@ async def update(session: Session) -> None:
 
 
 async def add_to_session_list(session: Session) -> None:
+    await update(session)
+
     async with RedisLock(
         services.redis,
         f"akatsuki:herbert:locks:session_list",
