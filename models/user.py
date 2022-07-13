@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from typing import Any
 from typing import Optional
 
 from pydantic import BaseModel
@@ -100,6 +101,39 @@ class Session(Account):
 
     def __repr__(self) -> str:
         return f"<{self.name} ({self.id})>"
+
+    def dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "token": self.token,
+            "current_country_code": self.current_country_code,
+            "long": self.long,
+            "lat": self.lat,
+            "utc_offset": self.utc_offset,
+            "presence_filter": self.presence_filter,
+            "action": self.action,
+            "action_text": self.action_text,
+            "map_md5": self.map_md5,
+            "map_id": self.map_id,
+            "mods": self.mods,
+            "mode": self.mode.value,
+            "channels": self.channels,
+            "spectators": self.spectators,
+            "spectating": self.spectating,
+            "match": self.match,
+            "friend_only_dms": self.friend_only_dms,
+            "in_lobby": self.in_lobby,
+            "away_msg": self.away_msg,
+            "osu_version": self.osu_version,
+            "running_under_wine": self.running_under_wine,
+            "osu_md5": self.osu_md5,
+            "adapters_md5": self.adapters_md5,
+            "uninstall_md5": self.uninstall_md5,
+            "disk_md5": self.disk_md5,
+            "adapters": self.adapters,
+            "last_np_id": self.last_np_id,
+            "last_np_mode": self.last_np_mode,
+        }
 
     @property
     def silence_expire(self) -> int:

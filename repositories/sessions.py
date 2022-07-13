@@ -4,6 +4,7 @@ import json
 import uuid
 from typing import Optional
 
+import repositories.accounts
 import services
 import utils
 from constants.action import Action
@@ -18,38 +19,56 @@ from objects.redis_lock import RedisLock
 
 
 async def fetch_by_id(id: int) -> Optional[Session]:
-    session_dict = await services.redis.hget("akatsuki:herbert:sessions", f"id_{id}")
-    if not session_dict:
+    session_res = await services.redis.hget("akatsuki:herbert:sessions", f"id_{id}")
+    if not session_res:
         return None
 
-    return Session(**json.loads(session_dict))
+    session_dict = json.loads(session_res)
+
+    account = await repositories.accounts.fetch_by_id(session_dict["id"])
+    return Session(**(session_dict | account.dict()))
 
 
 async def fetch_by_name(name: str) -> Optional[Session]:
-    session_dict = await services.redis.hget(
+    session_res = await services.redis.hget(
         "akatsuki:herbert:sessions",
         f"name_{utils.make_safe_name(name)}",
     )
-    if not session_dict:
+    if not session_res:
         return None
 
-    return Session(**json.loads(session_dict))
+    session_dict = json.loads(session_res)
+
+    account = await repositories.accounts.fetch_by_id(session_dict["id"])
+    return Session(**(session_dict | account.dict()))
 
 
 async def fetch_by_token(token: str) -> Optional[Session]:
-    session_dict = await services.redis.hget(
+    session_res = await services.redis.hget(
         "akatsuki:herbert:sessions",
         f"token_{token}",
     )
-    if not session_dict:
+    if not session_res:
         return None
 
-    return Session(**json.loads(session_dict))
+    session_dict = json.loads(session_res)
+
+    account = await repositories.accounts.fetch_by_id(session_dict["id"])
+    return Session(**(session_dict | account.dict()))
 
 
 async def fetch_all() -> set[Session]:
-    session_dicts = await services.redis.hgetall("akatsuki:herbert:sessions")
-    return {Session(**json.loads(session_dict)) for session_dict in session_dicts}
+    sessions = set()
+
+    session_dicts = {
+        json.loads(session_res)
+        for session_res in await services.redis.hgetall("akatsuki:herbert:sessions")
+    }
+    for session_dict in session_dicts:
+        account = await repositories.accounts.fetch_by_id(session_dict["id"])
+        sessions.add(Session(**(session_dict | account.dict())))
+
+    return sessions
 
 
 async def create(
