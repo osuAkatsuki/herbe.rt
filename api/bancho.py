@@ -174,34 +174,8 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
                 target_stats,
             )
 
-    bot = await repositories.accounts.fetch_by_id(999)
-
-    current_time = int(time.time())
     if not session.privileges & Privileges.USER_PUBLIC:
         data += usecases.packets.user_restricted()
-        data += usecases.packets.send_message(
-            Message(
-                bot.name,
-                settings.RESTRICTION_MESSAGE,
-                session.name,
-                bot.id,
-            ),
-        )
-    elif session.freeze_end > current_time:
-        data += usecases.packets.send_message(
-            Message(
-                bot.name,
-                settings.FROZEN_MESSAGE.format(
-                    time_until_restriction=timedelta(
-                        seconds=session.freeze_end - current_time,
-                    ),
-                ),
-                session.name,
-                bot.id,
-            ),
-        )
-    elif session.freeze_end != 0:
-        ...  # TODO: restrict
 
     if session.privileges & Privileges.USER_PENDING_VERIFICATION:
         await usecases.sessions.remove_privilege(
