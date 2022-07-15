@@ -3,16 +3,18 @@ from __future__ import annotations
 import inspect
 import logging
 import typing
-from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Union
 
 import packets.models
 import packets.typing
+import repositories.sessions
+from constants.mode import Mode
 from constants.packets import Packets
 from constants.privileges import Privileges
 from models.user import Session
+from packets.models import ChangeActionPacket
 from packets.models import PacketModel
 from packets.reader import Packet
 from packets.reader import PacketArray
@@ -112,3 +114,15 @@ async def handle_packet_data(data: bytearray, session: Session) -> None:
     for packet, handler in packet_array:
         logging.debug(f"Handled packet {packet.packet_id!r}")
         await handler(packet, session)
+
+
+@register_packet(Packets.OSU_CHANGE_ACTION, allow_restricted=True)
+async def change_action(packet: ChangeActionPacket, session: Session) -> None:
+    session.status.action = packet.action
+    session.status.action_text = packet.action_text
+    session.status.map_md5 = packet.map_md5
+    session.status.map_id = packet.map_id
+    session.status.mods = packet.mods
+    session.status.mode = Mode.from_mods(packet.mode, packet.mods)
+
+    await repositories.sessions.update(session)
