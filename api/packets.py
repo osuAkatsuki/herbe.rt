@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import logging
 from typing import Any
 from typing import Callable
 from typing import Optional
@@ -103,11 +104,12 @@ def register_packet(
     return decorator
 
 
-async def handle_request(data: bytes, session: Session) -> None:
+async def handle_packet_data(data: bytearray, session: Session) -> None:
     packet_map = HANDLERS
     if not session.privileges & Privileges.USER_PUBLIC:
         packet_map = RESTRICTED_HANDLERS
 
-    packet_array = PacketArray(bytearray(data), packet_map)
+    packet_array = PacketArray(data, packet_map)
     for packet, handler in packet_array:
+        logging.debug(f"Handled packet {packet.packet_id!r}")
         await handler(packet, session)

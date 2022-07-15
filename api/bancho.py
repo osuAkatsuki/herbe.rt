@@ -12,6 +12,7 @@ from fastapi import Header
 from fastapi import Request
 from fastapi import Response
 
+import api.packets
 import repositories.accounts
 import repositories.channels
 import repositories.hardware
@@ -58,7 +59,11 @@ async def bancho_request(
             headers={"cho-token": login_data.token},
         )
 
-    return b""
+    session = await repositories.sessions.fetch_by_token(osu_token)
+    if not session:
+        return Response(content=bytes(usecases.packets.restart_server(0)))
+
+    await api.packets.handle_packet_data(body, session)
 
 
 async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
