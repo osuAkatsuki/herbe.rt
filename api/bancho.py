@@ -117,6 +117,7 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
         await repositories.hardware.fetch_oui(adapter) for adapter in hardware.adapters
     }
     if not all(oui_info):
+        logging.warning(f"{session!r} logged in with invalid adapters (no OUI match)")
         ...  # TODO: what to do on invalid hardware?
 
     data = bytearray(usecases.packets.protocol_version(19))
