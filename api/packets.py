@@ -4,6 +4,7 @@ import inspect
 from typing import Any
 from typing import Callable
 from typing import Optional
+from typing import Union
 
 import packets.models
 import packets.typing
@@ -72,7 +73,7 @@ def register_packet(
             if not structure_class:
                 raise RuntimeError(f"Invalid packet model: {structure_class_name}")
 
-            data: dict[str, Any] = {}
+            data: dict[str, Union[bytes, osuType]] = {}
             for field, _type in structure_class.__annotations__.items():
                 if _type == "bytes":
                     data[field] = bytes(packet.data)
