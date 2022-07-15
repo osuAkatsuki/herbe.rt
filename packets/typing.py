@@ -32,7 +32,7 @@ class osuType:
         ...
 
 
-class i8(osuType):
+class i8(osuType, int):
     @classmethod
     def read(cls, packet: Packet) -> int:
         return read_int(packet.read(1))
@@ -42,7 +42,7 @@ class i8(osuType):
         return bytearray(struct.pack("<b", data))
 
 
-class u8(osuType):
+class u8(osuType, int):
     @classmethod
     def read(cls, packet: Packet) -> int:
         return read_int(packet.read(1), signed=False)
@@ -52,7 +52,7 @@ class u8(osuType):
         return bytearray(struct.pack("<B", data))
 
 
-class i16(osuType):
+class i16(osuType, int):
     @classmethod
     def read(cls, packet: Packet) -> int:
         return read_int(packet.read(2))
@@ -62,7 +62,7 @@ class i16(osuType):
         return bytearray(struct.pack("<h", data))
 
 
-class u16(osuType):
+class u16(osuType, int):
     @classmethod
     def read(cls, packet: Packet) -> int:
         return read_int(packet.read(2), signed=False)
@@ -72,7 +72,7 @@ class u16(osuType):
         return bytearray(struct.pack("<H", data))
 
 
-class i32(osuType):
+class i32(osuType, int):
     @classmethod
     def read(cls, packet: Packet) -> int:
         return read_int(packet.read(4))
@@ -82,7 +82,7 @@ class i32(osuType):
         return bytearray(struct.pack("<i", data))
 
 
-class i32_list(osuType):
+class i32_list(osuType, Sequence[int]):
     @classmethod
     def read(cls, packet: Packet) -> Sequence[int]:
         length = i16.read(packet)
@@ -101,7 +101,7 @@ class i32_list(osuType):
         return buffer
 
 
-class u32(osuType):
+class u32(osuType, int):
     @classmethod
     def read(cls, packet: Packet) -> int:
         return read_int(packet.read(4), signed=False)
@@ -111,7 +111,7 @@ class u32(osuType):
         return bytearray(struct.pack("<I", data))
 
 
-class f32(osuType):
+class f32(osuType, float):
     @classmethod
     def read(cls, packet: Packet) -> float:
         return read_float(packet.read(4))
@@ -121,7 +121,7 @@ class f32(osuType):
         return bytearray(struct.pack("<f", data))
 
 
-class i64(osuType):
+class i64(osuType, int):
     @classmethod
     def read(cls, packet: Packet) -> int:
         return read_int(packet.read(8))
@@ -131,7 +131,7 @@ class i64(osuType):
         return bytearray(struct.pack("<q", data))
 
 
-class f64(osuType):
+class f64(osuType, float):
     @classmethod
     def read(cls, packet: Packet) -> float:
         return read_float(packet.read(8))
@@ -141,7 +141,7 @@ class f64(osuType):
         return bytearray(struct.pack("<d", data))
 
 
-class String(osuType):
+class String(osuType, str):
     @classmethod
     def read(cls, packet: Packet) -> str:
         if u8.read(packet) != 0x0B:
