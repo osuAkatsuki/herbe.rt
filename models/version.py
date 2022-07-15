@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
-from functools import cached_property
 from typing import Literal
 
+from pydantic import BaseModel
 
-@dataclass
-class OsuVersion:
+
+class OsuVersion(BaseModel):
     date: date
 
     stream: Literal["stable", "beta", "cuttingedge", "tourney", "dev"] = "stable"

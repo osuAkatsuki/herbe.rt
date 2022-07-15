@@ -1,16 +1,23 @@
 from __future__ import annotations
 
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Any
 from typing import Optional
 
 from pydantic import BaseModel
+from pydantic import Field
 
 import utils
+from constants.action import Action
 from constants.mode import Mode
+from constants.presence import PresenceFilter
 from constants.privileges import BanchoPrivileges
 from constants.privileges import Privileges
+from models.geolocation import Geolocation
+from models.hardware import HardwareInfo
+from models.version import OsuVersion
 
 
 class Account(BaseModel):
@@ -58,16 +65,7 @@ class Account(BaseModel):
         return privileges
 
 
-class Session(Account):
-    token: str
-
-    # geolocation
-    current_country_code: str
-    long: float
-    lat: float
-    utc_offset: int
-
-    # status
+class Status(BaseModel):
     presence_filter: int
     action: int
     action_text: str
@@ -75,6 +73,32 @@ class Session(Account):
     map_id: int
     mods: int
     mode: Mode
+
+    @staticmethod
+    def default(cls) -> Status:
+        return cls(
+            presence_filter=PresenceFilter.NIL,
+            action=Action.IDLE,
+            action_text="",
+            map_md5="",
+            map_id=0,
+            mods=0,
+            mode=Mode.STD,
+        )
+
+
+class LastNp(BaseModel):
+    map_id: int
+    mode_vn: int
+
+
+class Session(Account):
+    token: str = Field(default_factory=uuid.uuid4)
+
+    geolocation: Geolocation
+    utc_offset: int
+
+    status: Status
 
     channels: set[str]
     spectators: set[int]
@@ -87,53 +111,13 @@ class Session(Account):
 
     away_msg: Optional[str]
 
-    # session "info"
-    osu_version: str
-    running_under_wine: bool
-    osu_md5: str
-    adapters_md5: str
-    uninstall_md5: str
-    disk_md5: str
-    adapters: list[str]
+    client_version: OsuVersion
+    hardware: HardwareInfo
 
-    last_np_id: Optional[int]
-    last_np_mode: Optional[int]
+    last_np: Optional[LastNp]
 
     def __repr__(self) -> str:
         return f"<{self.name} ({self.id})>"
-
-    def dict(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "token": self.token,
-            "current_country_code": self.current_country_code,
-            "long": self.long,
-            "lat": self.lat,
-            "utc_offset": self.utc_offset,
-            "presence_filter": self.presence_filter,
-            "action": self.action,
-            "action_text": self.action_text,
-            "map_md5": self.map_md5,
-            "map_id": self.map_id,
-            "mods": self.mods,
-            "mode": self.mode.value,
-            "channels": self.channels,
-            "spectators": self.spectators,
-            "spectating": self.spectating,
-            "match": self.match,
-            "friend_only_dms": self.friend_only_dms,
-            "in_lobby": self.in_lobby,
-            "away_msg": self.away_msg,
-            "osu_version": self.osu_version,
-            "running_under_wine": self.running_under_wine,
-            "osu_md5": self.osu_md5,
-            "adapters_md5": self.adapters_md5,
-            "uninstall_md5": self.uninstall_md5,
-            "disk_md5": self.disk_md5,
-            "adapters": self.adapters,
-            "last_np_id": self.last_np_id,
-            "last_np_mode": self.last_np_mode,
-        }
 
     @property
     def silence_expire(self) -> int:
@@ -141,3 +125,22 @@ class Session(Account):
             return 0
 
         return self.silence_end - int(time.time())
+
+    def dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "token": self.token,
+            "geolocation": self.geolocation.dict(),
+            "utc_offset": self.utc_offset,
+            "status": self.status.dict(),
+            "channels": self.channels,
+            "spectators": self.spectators,
+            "spectating": self.spectating,
+            "match": self.match,
+            "friend_only_dms": self.friend_only_dms,
+            "in_lobby": self.in_lobby,
+            "away_msg": self.away_msg,
+            "client_version": self.client_version.dict(),
+            "hardware": self.hardware.dict(),
+            "last_np": self.last_np.dict(),
+        }

@@ -12,9 +12,11 @@ from constants.mode import Mode
 from constants.mods import Mods
 from constants.presence import PresenceFilter
 from models.geolocation import Geolocation
-from models.session import SessionInfo
+from models.hardware import HardwareInfo
 from models.user import Account
 from models.user import Session
+from models.user import Status
+from models.version import OsuVersion
 from objects.redis_lock import RedisLock
 
 
@@ -74,26 +76,17 @@ async def fetch_all() -> set[Session]:
 async def create(
     account: Account,
     geolocation: Geolocation,
-    session_info: SessionInfo,
     utc_offset: int,
     friend_only_dms: bool,
+    client_version: OsuVersion,
+    hardware: HardwareInfo,
 ) -> Session:
-    token = str(uuid.uuid4())
-
     session = Session(
         **account.dict(),
-        token=token,
-        current_country_code=geolocation.country.acronym,
-        long=geolocation.long,
-        lat=geolocation.lat,
+        geolocation=geolocation,
         utc_offset=utc_offset,
         presence_filter=PresenceFilter.NIL,
-        action=Action.IDLE,
-        action_text="",
-        map_md5="",
-        map_id=0,
-        mods=Mods.NOMOD,
-        mode=Mode.STD,
+        status=Status.default(),
         channels=set(),
         spectators=set(),
         spectating=None,
@@ -101,15 +94,9 @@ async def create(
         friend_only_dms=friend_only_dms,
         in_lobby=False,
         away_msg=None,
-        osu_version=repr(session_info.client),
-        running_under_wine=session_info.hardware.running_under_wine,
-        osu_md5=session_info.hardware.osu_md5,
-        adapters_md5=session_info.hardware.adapters_md5,
-        uninstall_md5=session_info.hardware.uninstall_md5,
-        disk_md5=session_info.hardware.disk_md5,
-        adapters=session_info.hardware.adapters,
-        last_np_id=None,
-        last_np_mode=None,
+        client_version=client_version,
+        hardware=hardware,
+        last_np=None,
     )
 
     await update(session)

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 
-@dataclass
-class LoginData:
+class LoginData(BaseModel):
     username: str
     password_md5: bytes
     osu_version: str
@@ -18,7 +17,6 @@ class LoginData:
     disk_signature_md5: str
 
 
-@dataclass
-class LoginResponse:
+class LoginResponse(BaseModel):
     body: bytearray
     token: str = "no"

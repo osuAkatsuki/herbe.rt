@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 from constants.geolocation import OSU_GEOLOC
 
 
-@dataclass
-class Country:
+class Country(BaseModel):
     code: int
     acronym: str
 
@@ -19,9 +18,16 @@ class Country:
         return Country(code, acronym)
 
 
-@dataclass
-class Geolocation:
-    long: float = 0.0
-    lat: float = 0.0
-    country: Country = Country(0, "xx")
-    ip: str = ""
+class Geolocation(BaseModel):
+    long: float
+    lat: float
+    country: Country
+
+    ip: str
+
+    def dict(self) -> str:
+        return {
+            "long": self.long,
+            "lat": self.lat,
+            "country": self.country.dict(),
+        }

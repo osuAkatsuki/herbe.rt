@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 
-@dataclass
-class MenuIcon:
+class MenuIcon(BaseModel):
     image_url: str
     click_url: str

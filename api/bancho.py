@@ -14,10 +14,10 @@ from fastapi import Response
 
 import repositories.accounts
 import repositories.channels
+import repositories.hardware
 import repositories.icons
 import repositories.sessions
 import repositories.stats
-import settings
 import usecases.geolocation
 import usecases.hardware
 import usecases.login
@@ -30,8 +30,6 @@ from constants.privileges import Privileges
 from models.geolocation import Geolocation
 from models.hardware import HardwareInfo
 from models.login import LoginResponse
-from models.session import SessionInfo
-from packets.typing import Message
 
 router = APIRouter(default_response_class=Response)
 
@@ -68,7 +66,6 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
     login_data = usecases.login.parse_login_data(body)
 
     osu_version = usecases.version.parse_osu_version(login_data.osu_version)
-    osu_version.date = date.today()
     if not osu_version or osu_version.date < (date.today() - DELTA_90_DAYS):
         return LoginResponse(
             body=usecases.packets.version_update_forced()
@@ -81,16 +78,13 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
 
     adapters, running_under_wine = adapter_result
 
-    session_info = SessionInfo(
-        client=osu_version,
-        hardware=HardwareInfo(
-            running_under_wine,
-            login_data.osu_path_md5,
-            login_data.adapters_md5,
-            login_data.uninstall_md5,
-            login_data.disk_signature_md5,
-            adapters,
-        ),
+    hardware = HardwareInfo(
+        running_under_wine,
+        login_data.osu_path_md5,
+        login_data.adapters_md5,
+        login_data.uninstall_md5,
+        login_data.disk_signature_md5,
+        adapters,
     )
 
     account = await repositories.accounts.fetch_by_name(login_data.username)
@@ -112,12 +106,18 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
     session = await repositories.sessions.create(
         account,
         geolocation,
-        session_info,
         login_data.utc_offset,
         login_data.pm_private,
+        osu_version,
+        hardware,
     )
 
     # TODO: hardware matches, tourney client sessions
+    oui_info = {
+        await repositories.hardware.fetch_oui(adapter) for adapter in hardware.adapters
+    }
+    if not all(oui_info):
+        ...  # TODO: what to do on invalid hardware?
 
     data = bytearray(usecases.packets.protocol_version(19))
     data += usecases.packets.user_id(session.id)

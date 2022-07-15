@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 from constants.mode import Mode
 
 
-@dataclass
-class Stats:
+class Stats(BaseModel):
     user_id: int
     mode: Mode
 
