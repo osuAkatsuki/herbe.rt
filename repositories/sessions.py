@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import json
-import uuid
 from typing import Optional
 
 import repositories.accounts
+import repositories.stats
 import services
+import usecases.packets
+import usecases.sessions
 import utils
-from constants.action import Action
-from constants.mode import Mode
-from constants.mods import Mods
-from constants.presence import PresenceFilter
 from models.geolocation import Geolocation
 from models.hardware import HardwareInfo
 from models.user import Account
@@ -28,6 +26,8 @@ async def fetch_by_id(id: int) -> Optional[Session]:
     session_dict = json.loads(session_res)
 
     account = await repositories.accounts.fetch_by_id(session_dict["id"])
+    assert account is not None
+
     return Session(**(session_dict | account.dict()))
 
 
@@ -42,6 +42,8 @@ async def fetch_by_name(name: str) -> Optional[Session]:
     session_dict = json.loads(session_res)
 
     account = await repositories.accounts.fetch_by_id(session_dict["id"])
+    assert account is not None
+
     return Session(**(session_dict | account.dict()))
 
 
@@ -56,6 +58,8 @@ async def fetch_by_token(token: str) -> Optional[Session]:
     session_dict = json.loads(session_res)
 
     account = await repositories.accounts.fetch_by_id(session_dict["id"])
+    assert account is not None
+
     return Session(**(session_dict | account.dict()))
 
 
@@ -68,6 +72,8 @@ async def fetch_all() -> set[Session]:
     }
     for session_dict in session_dicts:
         account = await repositories.accounts.fetch_by_id(session_dict["id"])
+        assert account is not None
+
         sessions.add(Session(**(session_dict | account.dict())))
 
     return sessions
@@ -85,7 +91,6 @@ async def create(
         **account.dict(),
         geolocation=geolocation,
         utc_offset=utc_offset,
-        presence_filter=PresenceFilter.NIL,
         status=Status.default(),
         channels=set(),
         spectators=set(),
@@ -119,6 +124,12 @@ async def update(session: Session) -> None:
                 json.dumps(session.dict()),
             )
 
+    stats = await repositories.stats.fetch(session.id, session.status.mode)
+    await enqueue_data(
+        usecases.packets.user_stats(session, stats)
+        + usecases.packets.user_presence(session, stats),
+    )
+
 
 async def add_to_session_list(session: Session) -> None:
     await update(session)
@@ -131,3 +142,8 @@ async def add_to_session_list(session: Session) -> None:
             "akatsuki:herbert:session_list",
             session.id,
         )
+
+
+async def enqueue_data(data: bytearray) -> None:
+    for session in await fetch_all():
+        await usecases.sessions.enqueue_data(session.id, data)

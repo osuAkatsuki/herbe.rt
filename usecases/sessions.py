@@ -22,6 +22,23 @@ async def enqueue_data(user_id: int, data: bytearray) -> None:
         await services.redis.append(f"akatsuki:herbert:queues:{user_id}", data)
 
 
+async def dequeue_data(user_id: int) -> bytes:
+    data = b""
+
+    async with RedisLock(
+        services.redis,
+        f"akatsuki:herbert:locks:queues:{user_id}",
+    ):
+        redis_data = await services.redis.get(f"akatsuki:herbert:queues:{user_id}")
+        if not redis_data:
+            return data
+
+        data = bytes(redis_data)
+        await services.redis.delete(f"akatsuki:herbert:queues:{user_id}")
+
+    return data
+
+
 async def join_channel(session: Session, channel: Channel) -> bool:
     if session.id in channel.members:
         return False

@@ -124,5 +124,3 @@ async def change_action(packet: ChangeActionPacket, session: Session) -> None:
     session.status.map_id = packet.map_id
     session.status.mods = packet.mods
     session.status.mode = Mode.from_mods(packet.mode, packet.mods)
-
-    await repositories.sessions.update(session)

@@ -64,6 +64,9 @@ async def bancho_request(
         return Response(content=bytes(usecases.packets.restart_server(0)))
 
     await api.packets.handle_packet_data(body, session)
+    await repositories.sessions.update(session)
+
+    return Response(content=await usecases.sessions.dequeue_data(session.id))
 
 
 async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
