@@ -75,8 +75,8 @@ class Status(BaseModel):
     mode: Mode
 
     @staticmethod
-    def default(cls) -> Status:
-        return cls(
+    def default() -> Status:
+        return Status(
             presence_filter=PresenceFilter.NIL,
             action=Action.IDLE,
             action_text="",
