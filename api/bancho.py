@@ -192,7 +192,7 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
     )
 
     logging.info(
-        f"{session!r} logged in with osu! version {session_info.client} from {geolocation.country.acronym.upper()} in {formatted_time}",
+        f"{session!r} logged in with osu! version {session.client_version} from {geolocation.country.acronym.upper()} in {formatted_time}",
     )
 
     return LoginResponse(body=data, token=session.token)

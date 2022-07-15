@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class HardwareInfo(BaseModel):
     running_under_wine: bool
+
     osu_md5: str
     adapters_md5: str
     uninstall_md5: str
