@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import logging
+import typing
 from typing import Any
 from typing import Callable
 from typing import Optional
@@ -73,13 +74,13 @@ def register_packet(
 ) -> Callable[[PacketHandler], PacketWrapper]:
     def decorator(handler: PacketHandler) -> PacketWrapper:
         async def wrapper(packet: Packet, session: Session) -> None:
-            structure_class_name = handler.__annotations__["packet"]
+            structure_class_name = typing.get_type_hints(handler)["packet"]
             structure_class = get_packet_model_from_name(structure_class_name)
             if not structure_class:
                 raise RuntimeError(f"Invalid packet model: {structure_class_name}")
 
             data: dict[str, Union[bytes, osuType]] = {}
-            for field, _type in structure_class.__annotations__.items():
+            for field, _type in typing.get_type_hints(structure_class).items():
                 if _type == "bytes":
                     data[field] = bytes(packet.data)
                     packet.data.clear()
@@ -90,9 +91,7 @@ def register_packet(
 
                     data[field] = data_type_class.read(packet)
 
-            packet_model = structure_class()
-            packet_model.__dict__ |= data
-
+            packet_model = structure_class(**data)
             return await handler(packet_model, session)
 
         HANDLERS[packet_id] = wrapper
