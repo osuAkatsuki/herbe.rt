@@ -3,10 +3,6 @@ from __future__ import annotations
 from functools import cache
 from functools import lru_cache
 
-from constants.action import Action
-from constants.geolocation import OSU_GEOLOC
-from constants.mode import Mode
-from constants.mods import Mods
 from constants.packets import Packets
 from models.channel import Channel
 from models.stats import Stats
@@ -119,15 +115,13 @@ def channel_kick(channel: str) -> bytearray:
 def user_presence(session: Session, stats: Stats) -> bytearray:
     packet = PacketWriter.from_id(Packets.CHO_USER_PRESENCE)
 
-    geoloc_code = OSU_GEOLOC[session.current_country_code]
-
     packet += i32.write(session.id)
     packet += String.write(session.name)
     packet += u8.write(session.utc_offset + 24)
-    packet += u8.write(geoloc_code)
-    packet += u8.write(session.bancho_privileges | (session.mode << 5))
-    packet += f32.write(session.long)
-    packet += f32.write(session.lat)
+    packet += u8.write(session.geolocation.country.code)
+    packet += u8.write(session.bancho_privileges | (session.status.mode.as_vn << 5))
+    packet += f32.write(session.geolocation.long)
+    packet += f32.write(session.geolocation.lat)
     packet += i32.write(stats.rank)
 
     return packet.serialise()
@@ -144,12 +138,12 @@ def user_stats(session: Session, stats: Stats) -> bytearray:
         pp = stats.pp
 
     packet += i32.write(session.id)
-    packet += u8.write(session.action)
-    packet += String.write(session.action_text)
-    packet += String.write(session.map_md5)
-    packet += i32.write(session.mods)
-    packet += u8.write(session.mode.as_vn)
-    packet += i32.write(session.map_id)
+    packet += u8.write(session.status.action)
+    packet += String.write(session.status.action_text)
+    packet += String.write(session.status.map_md5)
+    packet += i32.write(session.status.mods)
+    packet += u8.write(session.status.mode.as_vn)
+    packet += i32.write(session.status.map_id)
     packet += i64.write(rscore)
     packet += f32.write(stats.accuracy / 100.0)
     packet += i32.write(stats.playcount)
