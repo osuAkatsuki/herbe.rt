@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from packets.typing import i32
-from packets.typing import String
-from packets.typing import u32
-from packets.typing import u8
+if TYPE_CHECKING:
+    from packets.typing import i32
+    from packets.typing import String
+    from packets.typing import u32
+    from packets.typing import u8
 
 
 class PacketModel(BaseModel):
