@@ -74,10 +74,7 @@ def register_packet(
 
             data: dict[str, Any] = {}
             for field, _type in structure_class.__annotations__.items():
-                if _type == "bytearray":
-                    data[field] = packet.data
-                    packet.data.clear()
-                elif _type == "bytes":
+                if _type == "bytes":
                     data[field] = bytes(packet.data)
                     packet.data.clear()
                 else:
