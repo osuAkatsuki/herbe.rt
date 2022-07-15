@@ -107,3 +107,5 @@ async def handle_request(data: bytes, session: Session) -> None:
         packet_map = RESTRICTED_HANDLERS
 
     packet_array = PacketArray(bytearray(data), packet_map)
+    for packet, handler in packet_array:
+        await handler(packet, session)
