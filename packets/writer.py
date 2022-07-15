@@ -12,8 +12,8 @@ class PacketWriter:
         self.packet_id = packet_id
 
     @classmethod
-    def from_id(self, packet_id: Packets) -> PacketWriter:
-        return PacketWriter(bytearray(), packet_id)
+    def from_id(cls, packet_id: Packets) -> PacketWriter:
+        return cls(bytearray(), packet_id)
 
     def __iadd__(self, other: bytearray) -> PacketWriter:
         self.write(other)

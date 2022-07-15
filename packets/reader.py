@@ -7,21 +7,21 @@ from typing import TYPE_CHECKING
 from constants.packets import Packets
 
 if TYPE_CHECKING:
-    from packets.typing import PacketHandler
+    from packets.typing import PacketWrapper
 
 
-def parse_header(data: bytearray) -> tuple[int, int]:
+def parse_header(data: bytearray) -> tuple[Packets, int]:
     header = data[:7]
-    data = struct.unpack("<HxI", header)
+    unpacked_data = struct.unpack("<HxI", header)
 
-    return data[0], data[1]  # packet id, length
+    return Packets(unpacked_data[0]), unpacked_data[1]  # packet id, length
 
 
 class Packet:
     def __init__(self, data: bytearray) -> None:
         self.data = data
 
-        self.packet_id: int = 0
+        self.packet_id: Packets = Packets(0)
         self.length: int = 0
 
         self.read_header()
@@ -43,7 +43,7 @@ class PacketArray:
     def __init__(
         self,
         data: bytearray,
-        packet_map: dict[Packets, PacketHandler],
+        packet_map: dict[Packets, PacketWrapper],
     ) -> None:
         self.data = data
         self.packets: list[Packet] = []
@@ -51,7 +51,7 @@ class PacketArray:
 
         self._split_data()
 
-    def __iter__(self) -> Iterator[tuple[Packet, PacketHandler]]:
+    def __iter__(self) -> Iterator[tuple[Packet, PacketWrapper]]:
         for packet in self.packets:
             handler = self.packet_map[packet.packet_id]
 

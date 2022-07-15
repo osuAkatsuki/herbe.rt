@@ -18,5 +18,5 @@ class LoginData(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    body: bytearray
+    body: bytes
     token: str = "no"

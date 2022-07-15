@@ -47,14 +47,14 @@ async def bancho_request(
     osu_token: Optional[str] = Header(None),
     user_agent: Literal["osu!"] = Header(...),
 ):
-    body = await request.body()
-    geolocation = usecases.geolocation.from_headers(request.headers)
+    body = bytearray(await request.body())
+    geolocation = usecases.geolocation.from_headers(dict(request.headers))
 
     if not osu_token:
         login_data = await login(body, geolocation)
 
         return Response(
-            content=bytes(login_data.body),
+            content=login_data.body,
             headers={"cho-token": login_data.token},
         )
 
@@ -79,12 +79,12 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
     adapters, running_under_wine = adapter_result
 
     hardware = HardwareInfo(
-        running_under_wine,
-        login_data.osu_path_md5,
-        login_data.adapters_md5,
-        login_data.uninstall_md5,
-        login_data.disk_signature_md5,
-        adapters,
+        running_under_wine=running_under_wine,
+        osu_md5=login_data.osu_path_md5,
+        adapters_md5=login_data.adapters_md5,
+        uninstall_md5=login_data.uninstall_md5,
+        disk_md5=login_data.disk_signature_md5,
+        adapters=adapters,
     )
 
     account = await repositories.accounts.fetch_by_name(login_data.username)
@@ -151,7 +151,7 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
     data += usecases.packets.friends_list(session.friends)
     data += usecases.packets.silence_end(session.silence_expire)
 
-    stats = await repositories.stats.fetch(session.id, session.mode)
+    stats = await repositories.stats.fetch(session.id, session.status.mode)
     user_data = usecases.packets.user_presence(
         session,
         stats,
@@ -166,7 +166,7 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
             await usecases.sessions.enqueue_data(target.id, user_data)
 
         if not target.privileges & Privileges.USER_PUBLIC:
-            target_stats = await repositories.stats.fetch(target.id, target.mode)
+            target_stats = await repositories.stats.fetch(target.id, target.status.mode)
             data += usecases.packets.user_presence(
                 target,
                 target_stats,
@@ -196,4 +196,4 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
         f"{session!r} logged in with osu! version {session.client_version!r} from {geolocation.country.acronym.upper()} in {formatted_time}",
     )
 
-    return LoginResponse(body=data, token=session.token)
+    return LoginResponse(body=bytes(data), token=session.token)

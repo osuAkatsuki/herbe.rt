@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import importlib
+import inspect
+import logging
+from typing import Any
 from typing import Union
 
 
@@ -17,4 +21,4 @@ def format_time(time: Union[int, float]) -> str:
 
         time /= 1000
 
-    return f"{time:.2f}{suffix}"
+    return f"{time:.2f}{suffix}"  # type: ignore

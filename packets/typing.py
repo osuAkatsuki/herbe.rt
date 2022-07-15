@@ -4,11 +4,14 @@ import struct
 from typing import Any
 from typing import Awaitable
 from typing import Callable
+from typing import Sequence
 
+from models.user import Session
+from packets.models import PacketModel
 from packets.reader import Packet
 
-
-PacketHandler = Callable[[Packet], Awaitable[None]]
+PacketWrapper = Callable[[Packet, Session], Awaitable[None]]
+PacketHandler = Callable[[PacketModel, Session], Awaitable[None]]
 
 
 def read_int(data: bytearray, signed: bool = True) -> int:
@@ -16,7 +19,7 @@ def read_int(data: bytearray, signed: bool = True) -> int:
 
 
 def read_float(data: bytearray) -> float:
-    return struct.unpack("<f", data)
+    return struct.unpack("<f", data)[0]
 
 
 class osuType:
@@ -36,7 +39,7 @@ class i8(osuType):
 
     @classmethod
     def write(cls, data: int) -> bytearray:
-        return struct.pack("<b", data)
+        return bytearray(struct.pack("<b", data))
 
 
 class u8(osuType):
@@ -46,7 +49,7 @@ class u8(osuType):
 
     @classmethod
     def write(cls, data: int) -> bytearray:
-        return struct.pack("<B", data)
+        return bytearray(struct.pack("<B", data))
 
 
 class i16(osuType):
@@ -56,7 +59,7 @@ class i16(osuType):
 
     @classmethod
     def write(cls, data: int) -> bytearray:
-        return struct.pack("<h", data)
+        return bytearray(struct.pack("<h", data))
 
 
 class u16(osuType):
@@ -66,7 +69,7 @@ class u16(osuType):
 
     @classmethod
     def write(cls, data: int) -> bytearray:
-        return struct.pack("<H", data)
+        return bytearray(struct.pack("<H", data))
 
 
 class i32(osuType):
@@ -76,12 +79,12 @@ class i32(osuType):
 
     @classmethod
     def write(cls, data: int) -> bytearray:
-        return struct.pack("<i", data)
+        return bytearray(struct.pack("<i", data))
 
 
 class i32_list(osuType):
     @classmethod
-    def read(cls, packet: Packet) -> list[int]:
+    def read(cls, packet: Packet) -> Sequence[int]:
         length = i16.read(packet)
         return struct.unpack(
             f"<{'I' * length}",
@@ -89,7 +92,7 @@ class i32_list(osuType):
         )
 
     @classmethod
-    def write(cls, data: set[int]) -> bytearray:
+    def write(cls, data: Sequence[int]) -> bytearray:
         buffer = bytearray(len(data).to_bytes(2, "little"))
 
         for item in data:
@@ -105,17 +108,17 @@ class u32(osuType):
 
     @classmethod
     def write(cls, data: int) -> bytearray:
-        return struct.pack("<I", data)
+        return bytearray(struct.pack("<I", data))
 
 
 class f32(osuType):
     @classmethod
-    def read(cls, packet: Packet) -> int:
+    def read(cls, packet: Packet) -> float:
         return read_float(packet.read(4))
 
     @classmethod
     def write(cls, data: float) -> bytearray:
-        return struct.pack("<f", data)
+        return bytearray(struct.pack("<f", data))
 
 
 class i64(osuType):
@@ -125,17 +128,17 @@ class i64(osuType):
 
     @classmethod
     def write(cls, data: int) -> bytearray:
-        return struct.pack("<q", data)
+        return bytearray(struct.pack("<q", data))
 
 
 class f64(osuType):
     @classmethod
-    def read(cls, packet: Packet) -> int:
+    def read(cls, packet: Packet) -> float:
         return read_float(packet.read(8))
 
     @classmethod
     def write(cls, data: float) -> bytearray:
-        return struct.pack("<d", data)
+        return bytearray(struct.pack("<d", data))
 
 
 class String(osuType):

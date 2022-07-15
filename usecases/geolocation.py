@@ -23,14 +23,18 @@ def from_headers(headers: dict[str, str]) -> Geolocation:
 
     city = services.geolocation.city(ip)
 
+    assert city.country.iso_code is not None
+    assert city.location.longitude is not None
+    assert city.location.latitude is not None
+
     iso_code = city.country.iso_code.lower()
     country = Country.from_iso(iso_code)
 
     geolocation = Geolocation(
-        city.location.longitude,
-        city.location.latitude,
-        country,
-        ip,
+        long=city.location.longitude,
+        lat=city.location.latitude,
+        country=country,
+        ip=ip,
     )
 
     return geolocation
