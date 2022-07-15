@@ -49,7 +49,7 @@ async def bancho_request(
     user_agent: Literal["osu!"] = Header(...),
 ):
     body = bytearray(await request.body())
-    geolocation = usecases.geolocation.from_headers(dict(request.headers))
+    geolocation = usecases.geolocation.from_headers(request.headers)
 
     if not osu_token:
         login_data = await login(body, geolocation)

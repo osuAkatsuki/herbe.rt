@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from typing import Mapping
 
 import services
 from models.geolocation import Country
@@ -9,7 +10,7 @@ from models.geolocation import Geolocation
 CACHE: dict[str, Geolocation] = {}
 
 
-def from_headers(headers: dict[str, str]) -> Geolocation:
+def from_headers(headers: Mapping[str, str]) -> Geolocation:
     if not (ip := headers.get("CF-Connecting-IP")):
         forwards = headers["X-Forwarded-For"].split(",")
 
