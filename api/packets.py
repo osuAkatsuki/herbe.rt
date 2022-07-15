@@ -26,12 +26,16 @@ MODEL_CLASSES: dict[str, type[PacketModel]] = {}
 DATA_TYPE_CLASSES: dict[str, type[osuType]] = {}
 
 
+def is_valid_subclass(_obj: object, subclass: type) -> bool:
+    return inspect.isclass(_obj) and issubclass(_obj, subclass)
+
+
 def is_valid_packet_model(_obj: object) -> bool:
-    return inspect.isclass(_obj) and issubclass(_obj, PacketModel)
+    return is_valid_subclass(_obj, PacketModel)
 
 
 def is_valid_packet_data_type(_obj: object) -> bool:
-    return inspect.isclass(_obj) and issubclass(_obj, osuType)
+    return is_valid_subclass(_obj, osuType)
 
 
 def get_packet_model_from_name(class_name: str) -> Optional[type[PacketModel]]:
