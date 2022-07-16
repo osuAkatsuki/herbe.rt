@@ -169,7 +169,7 @@ async def change_action(packet: ChangeActionPacket, session: Session) -> None:
     session.status.mods = packet.mods
     session.status.mode = Mode.from_mods(packet.mode, packet.mods)
 
-    logging.info(f"Updated {session!r}'s status. New action: {packet.action}")
+    logging.info(f"Updated {session!r}'s status")
 
 
 @register_packet(Packets.OSU_LOGOUT, allow_restricted=True)
