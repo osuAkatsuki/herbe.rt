@@ -147,7 +147,7 @@ async def handle_packet_data(data: bytearray, session: Session) -> None:
     should_update = True
     packet_array = PacketArray(data, packet_map)
     for packet, handler in packet_array:
-        if packet is Packets.CHO_USER_LOGOUT:
+        if packet is Packets.OSU_LOGOUT:
             should_update = False
 
         logging.debug(f"Handled packet {packet.packet_id!r}")
