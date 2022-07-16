@@ -8,6 +8,9 @@ import packets.typing
 class PacketModel(BaseModel):
     ...
 
+    class Config:
+        arbitrary_types_allowed = True
+
 
 class ChangeActionPacket(PacketModel):
     action: packets.typing.u8
@@ -20,3 +23,7 @@ class ChangeActionPacket(PacketModel):
 
 class LogoutPacket(PacketModel):
     _: packets.typing.i32
+
+
+class SendMessagePacket(PacketModel):
+    message: packets.typing.Message

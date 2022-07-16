@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 import api.bancho
 import api.redis
+import repositories.channels
 import services
 
 
@@ -12,6 +13,8 @@ def init_events(app: FastAPI) -> None:
     async def on_startup() -> None:
         await services.connect_services()
         await api.redis.initialise_pubsubs()
+
+        await repositories.channels.initialise_channels()
 
     @app.on_event("shutdown")
     async def on_shutdown() -> None:

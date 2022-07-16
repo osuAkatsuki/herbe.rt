@@ -132,6 +132,10 @@ class Session(Account):
 
         return self.silence_end - int(time.time())
 
+    @property
+    def silenced(self) -> bool:
+        return self.silence_expire > int(time.time())
+
     def dict(self) -> dict[str, Any]:
         return {
             "id": self.id,

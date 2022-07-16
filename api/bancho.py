@@ -131,6 +131,9 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
     data += usecases.packets.bancho_privileges(session.bancho_privileges)
 
     for channel in await repositories.channels.fetch_all():
+        if channel.name == "#lobby":
+            continue
+
         if (
             not channel.public_read
             and not session.privileges & Privileges.ADMIN_MANAGE_USERS

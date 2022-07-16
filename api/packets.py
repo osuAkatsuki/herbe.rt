@@ -13,7 +13,9 @@ from typing import Union
 
 import packets.models
 import packets.typing
+import repositories.channels
 import repositories.sessions
+import usecases.channels
 import usecases.sessions
 from constants.mode import Mode
 from constants.packets import Packets
@@ -22,6 +24,7 @@ from models.user import Session
 from packets.models import ChangeActionPacket
 from packets.models import LogoutPacket
 from packets.models import PacketModel
+from packets.models import SendMessagePacket
 from packets.reader import Packet
 from packets.reader import PacketArray
 from packets.typing import osuType
@@ -150,7 +153,7 @@ async def handle_packet_data(data: bytearray, session: Session) -> None:
         if packet.packet_id is Packets.OSU_LOGOUT:
             should_update = False
 
-        logging.debug(f"Handled packet {packet.packet_id!r}")
+        logging.info(f"Handled packet {packet.packet_id!r} for {session!r}")
         await handler(packet, session)
 
     if should_update:
@@ -178,3 +181,47 @@ async def user_logout(packet: LogoutPacket, session: Session) -> None:
         return
 
     await usecases.sessions.logout(session)
+
+
+IGNORED_CHANNELS = ("#highlight", "#userlog")
+
+
+@register_packet(Packets.OSU_SEND_PUBLIC_MESSAGE)
+async def public_message(packet: SendMessagePacket, session: Session) -> None:
+    if session.silenced:
+        logging.warning(f"{session!r} tried to send a message while silenced")
+        return
+
+    msg = packet.message.content.strip()
+    if not msg:
+        return
+
+    recipient = packet.message.recipient_username
+    if recipient in IGNORED_CHANNELS:
+        return
+
+    # TODO: spec chats, multi chats
+    channel = await repositories.channels.fetch_by_name(recipient)
+    if not channel:
+        logging.warning(
+            f"{session!r} tried to write to non-existent channel {recipient}",
+        )
+        return
+
+    if session.id not in channel.members:
+        logging.warning(
+            f"{session!r} tried to send a message in {recipient} without being in it",
+        )
+        return
+
+    if (
+        not channel.public_write
+        and not session.privileges & Privileges.ADMIN_MANAGE_USERS
+    ):
+        return
+
+    await usecases.channels.send_message(channel, msg, session)
+
+    # TODO: commands
+
+    logging.info(f"{session!r} sent a message to {recipient}: {msg}")
