@@ -159,7 +159,6 @@ async def handle_packet_data(data: bytearray, session: Session) -> None:
 
 @register_packet(Packets.OSU_CHANGE_ACTION, allow_restricted=True)
 async def change_action(packet: ChangeActionPacket, session: Session) -> None:
-    print(packet.dict())
     session.status.action = packet.action
     session.status.action_text = packet.action_text
     session.status.map_md5 = packet.map_md5
