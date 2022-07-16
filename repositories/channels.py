@@ -67,13 +67,15 @@ async def update(channel: Channel) -> None:
 
 
 async def initialise_channels() -> None:
-    if await fetch_all():
-        return
+    current_channels = await fetch_all()
 
     db_channels = await services.database.fetch_all(
         "SELECT id, name, description, public_read, public_write, temp, hidden FROM bancho_channels",
     )
     for db_channel in db_channels:
+        if any(db_channel["name"] == channel.name for channel in current_channels):
+            continue
+
         channel_info = {
             "id": db_channel["id"],
             "name": db_channel["name"],
