@@ -30,7 +30,7 @@ class Account(BaseModel):
     password_bcrypt: str
     country: str
 
-    friends: set[int]
+    friends: list[int]
 
     clan_id: int
     clan_privileges: int
@@ -92,16 +92,22 @@ class LastNp(BaseModel):
     mode_vn: int
 
 
+def generate_token() -> str:
+    return str(uuid.uuid4())
+
+
 class Session(Account):
-    token: str = Field(default_factory=uuid.uuid4)
+    token: str = Field(default_factory=generate_token)
 
     geolocation: Geolocation
     utc_offset: int
 
+    login_time: float
+
     status: Status
 
-    channels: set[str]
-    spectators: set[int]
+    channels: list[str]
+    spectators: list[int]
 
     spectating: Optional[int]
     match: Optional[int]
@@ -132,6 +138,7 @@ class Session(Account):
             "token": self.token,
             "geolocation": self.geolocation.dict(),
             "utc_offset": self.utc_offset,
+            "login_time": self.login_time,
             "status": self.status.dict(),
             "channels": self.channels,
             "spectators": self.spectators,
@@ -142,5 +149,5 @@ class Session(Account):
             "away_msg": self.away_msg,
             "client_version": self.client_version.dict(),
             "hardware": self.hardware.dict(),
-            "last_np": self.last_np.dict(),
+            "last_np": self.last_np.dict() if self.last_np else None,
         }

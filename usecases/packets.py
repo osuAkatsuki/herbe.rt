@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from functools import cache
 from functools import lru_cache
+from typing import Collection
+from typing import Sequence
 
 from constants.packets import Packets
 from models.channel import Channel
@@ -76,7 +78,7 @@ def menu_icon(icon_url: str, click_url: str) -> bytearray:
     return packet.serialise()
 
 
-def friends_list(friends_list: set[int]) -> bytearray:
+def friends_list(friends_list: Collection[int]) -> bytearray:
     packet = PacketWriter.from_id(Packets.CHO_FRIENDS_LIST)
     packet += i32_list.write(friends_list)
     return packet.serialise()
@@ -131,11 +133,11 @@ def user_stats(session: Session, stats: Stats) -> bytearray:
     packet = PacketWriter.from_id(Packets.CHO_USER_STATS)
 
     if stats.pp > 0x7FFF:
-        rscore = stats.pp
+        rscore = int(stats.pp)
         pp = 0
     else:
         rscore = stats.ranked_score
-        pp = stats.pp
+        pp = int(stats.pp)
 
     packet += i32.write(session.id)
     packet += u8.write(session.status.action)
@@ -163,4 +165,14 @@ def user_restricted() -> bytearray:
 def send_message(message: Message) -> bytearray:
     packet = PacketWriter.from_id(Packets.CHO_SEND_MESSAGE)
     packet += message.serialise()
+    return packet.serialise()
+
+
+@cache
+def logout(user_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_USER_LOGOUT)
+
+    packet += i32.write(user_id)
+    packet += u8.write(0)  # ?
+
     return packet.serialise()

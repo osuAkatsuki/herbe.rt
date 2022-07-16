@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Optional
 
 import repositories.accounts
@@ -19,7 +20,7 @@ from objects.redis_lock import RedisLock
 
 
 async def fetch_by_id(id: int) -> Optional[Session]:
-    session_res = await services.redis.hget("akatsuki:herbert:sessions", f"id_{id}")
+    session_res = await services.redis.hget("akatsuki:herbert:sessions:id", id)
     if not session_res:
         return None
 
@@ -33,8 +34,8 @@ async def fetch_by_id(id: int) -> Optional[Session]:
 
 async def fetch_by_name(name: str) -> Optional[Session]:
     session_res = await services.redis.hget(
-        "akatsuki:herbert:sessions",
-        f"name_{utils.make_safe_name(name)}",
+        "akatsuki:herbert:sessions:name",
+        utils.make_safe_name(name),
     )
     if not session_res:
         return None
@@ -49,8 +50,8 @@ async def fetch_by_name(name: str) -> Optional[Session]:
 
 async def fetch_by_token(token: str) -> Optional[Session]:
     session_res = await services.redis.hget(
-        "akatsuki:herbert:sessions",
-        f"token_{token}",
+        "akatsuki:herbert:sessions:token",
+        token,
     )
     if not session_res:
         return None
@@ -63,18 +64,17 @@ async def fetch_by_token(token: str) -> Optional[Session]:
     return Session(**(session_dict | account.dict()))
 
 
-async def fetch_all() -> set[Session]:
-    sessions = set()
+async def fetch_all() -> list[Session]:
+    sessions = []
 
-    session_dicts = {
-        json.loads(session_res)
-        for session_res in await services.redis.hgetall("akatsuki:herbert:sessions")
-    }
-    for session_dict in session_dicts:
+    for redis_session in (
+        await services.redis.hgetall("akatsuki:herbert:sessions:token")
+    ).values():
+        session_dict = json.loads(redis_session)
         account = await repositories.accounts.fetch_by_id(session_dict["id"])
         assert account is not None
 
-        sessions.add(Session(**(session_dict | account.dict())))
+        sessions.append(Session(**(session_dict | account.dict())))
 
     return sessions
 
@@ -91,9 +91,10 @@ async def create(
         **account.dict(),
         geolocation=geolocation,
         utc_offset=utc_offset,
+        login_time=time.time(),
         status=Status.default(),
-        channels=set(),
-        spectators=set(),
+        channels=[],
+        spectators=[],
         spectating=None,
         match=None,
         friend_only_dms=friend_only_dms,
@@ -113,15 +114,17 @@ async def update(session: Session) -> None:
         services.redis,
         f"akatsuki:herbert:locks:sessions:{session.id}",
     ):
-        for key in (
-            f"id_{session.id}",
-            f"name_{utils.make_safe_name(session.name)}",
-            f"token_{session.token}",
+        session_dump = json.dumps(session.dict())
+
+        for redis_name, redis_key in (
+            ("akatsuki:herbert:sessions:id", session.id),
+            ("akatsuki:herbert:sessions:name", utils.make_safe_name(session.name)),
+            ("akatsuki:herbert:sessions:token", session.token),
         ):
             await services.redis.hset(
-                "akatsuki:herbert:sessions",
-                key,
-                json.dumps(session.dict()),
+                name=redis_name,
+                key=redis_key,
+                value=session_dump,
             )
 
     stats = await repositories.stats.fetch(session.id, session.status.mode)
@@ -147,3 +150,14 @@ async def add_to_session_list(session: Session) -> None:
 async def enqueue_data(data: bytearray) -> None:
     for session in await fetch_all():
         await usecases.sessions.enqueue_data(session.id, data)
+
+
+async def delete(session: Session) -> None:
+    for redis_name, redis_key in (
+        ("akatsuki:herbert:sessions:id", session.id),
+        ("akatsuki:herbert:sessions:name", utils.make_safe_name(session.name)),
+        ("akatsuki:herbert:sessions:token", session.token),
+    ):
+        await services.redis.hdel(redis_name, redis_key)
+
+    await services.redis.lrem("akatsuki:herbert:session_list", 0, session.id)

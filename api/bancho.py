@@ -64,7 +64,6 @@ async def bancho_request(
         return Response(content=bytes(usecases.packets.restart_server(0)))
 
     await api.packets.handle_packet_data(body, session)
-    await repositories.sessions.update(session)
 
     return Response(content=await usecases.sessions.dequeue_data(session.id))
 
@@ -74,11 +73,11 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
     login_data = usecases.login.parse_login_data(body)
 
     osu_version = usecases.version.parse_osu_version(login_data.osu_version)
-    if not osu_version or osu_version.date < (date.today() - DELTA_90_DAYS):
-        return LoginResponse(
-            body=usecases.packets.version_update_forced()
-            + usecases.packets.user_id(-2),
-        )
+    # if not osu_version or osu_version.date < (date.today() - DELTA_90_DAYS):
+    #     return LoginResponse(
+    #         body=usecases.packets.version_update_forced()
+    #         + usecases.packets.user_id(-2),
+    #     )
 
     adapter_result = usecases.hardware.parse_adapters(login_data.adapters_str)
     if not adapter_result:

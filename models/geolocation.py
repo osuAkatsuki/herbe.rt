@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Any
+from typing import Optional
+
 from pydantic import BaseModel
 
 from constants.geolocation import OSU_GEOLOC
@@ -15,7 +18,7 @@ class Country(BaseModel):
         acronym = acronym.lower()
 
         code = OSU_GEOLOC[acronym]
-        return Country(code, acronym)
+        return Country(code=code, acronym=acronym)
 
 
 class Geolocation(BaseModel):
@@ -23,9 +26,9 @@ class Geolocation(BaseModel):
     lat: float
     country: Country
 
-    ip: str
+    ip: Optional[str] = None
 
-    def dict(self) -> str:
+    def dict(self) -> dict[str, Any]:
         return {
             "long": self.long,
             "lat": self.lat,

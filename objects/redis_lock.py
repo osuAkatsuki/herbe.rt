@@ -33,6 +33,5 @@ class RedisLock:
         exc_type: Optional[type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
-    ) -> bool:
+    ) -> None:
         await self.release()
-        return exc_type is not None

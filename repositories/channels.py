@@ -3,8 +3,12 @@ from __future__ import annotations
 import json
 from typing import Optional
 
+import repositories.sessions
 import services
+import usecases.packets
+import usecases.sessions
 import utils
+from constants.privileges import Privileges
 from models.channel import Channel
 from objects.redis_lock import RedisLock
 
@@ -29,7 +33,7 @@ async def fetch_by_name(name: str) -> Optional[Channel]:
 
 
 async def fetch_all() -> set[Channel]:
-    channel_dicts = await services.redis.hgetall("akatsuki:herbert:channels")
+    channel_dicts = (await services.redis.hgetall("akatsuki:herbert:channels")).values()
     return {Channel(**json.loads(channel_dict)) for channel_dict in channel_dicts}
 
 
@@ -38,9 +42,20 @@ async def update(channel: Channel) -> None:
         services.redis,
         f"akatsuki:herbert:locks:channels:{channel.name}",
     ):
-        for key in (f"id_{channel.id}", f"name_{channel.name}"):
-            await services.redis.hset(
-                "akatsuki:herbert:channels",
-                key,
-                json.dumps(channel.dict()),
-            )
+        channel_dump = json.dumps(channel.dict())
+        await services.redis.hset(
+            name="akatsuki:herbert:channels",
+            mapping={
+                f"id_{channel.id}": channel_dump,
+                f"name_{channel.name}": channel_dump,
+            },
+        )
+
+        channel_info_packet = usecases.packets.channel_info(channel)
+        for target in await repositories.sessions.fetch_all():
+            if (
+                channel.public_read
+                or target.privileges & Privileges.ADMIN_MANAGE_USERS
+                or target in channel.members
+            ):
+                await usecases.sessions.enqueue_data(target.id, channel_info_packet)

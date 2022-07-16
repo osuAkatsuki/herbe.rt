@@ -7,7 +7,9 @@ import repositories.channels
 import repositories.sessions
 import services
 import usecases.accounts
+import usecases.channels
 import usecases.packets
+import usecases.sessions
 from constants.privileges import Privileges
 from models.channel import Channel
 from models.user import Session
@@ -19,7 +21,7 @@ async def enqueue_data(user_id: int, data: bytearray) -> None:
         services.redis,
         f"akatsuki:herbert:locks:queues:{user_id}",
     ):
-        await services.redis.append(f"akatsuki:herbert:queues:{user_id}", data)
+        await services.redis.append(f"akatsuki:herbert:queues:{user_id}", bytes(data))
 
 
 async def dequeue_data(user_id: int) -> bytes:
@@ -52,10 +54,10 @@ async def join_channel(session: Session, channel: Channel) -> bool:
     if channel.name == "#lobby" and not session.in_lobby:
         return False
 
-    session.channels.add(channel.name)
+    session.channels.append(channel.name)
     await repositories.sessions.update(session)
 
-    channel.members.add(session.id)
+    channel.members.append(session.id)
     await repositories.channels.update(channel)
 
     await enqueue_data(session.id, usecases.packets.join_channel(channel.name))
@@ -74,7 +76,7 @@ async def join_channel(session: Session, channel: Channel) -> bool:
 
             await enqueue_data(target.id, channel_info_packet)
 
-    logging.info(f"{session} joined {channel.name}")
+    logging.info(f"{session!r} joined {channel.name}")
     return True
 
 
@@ -83,3 +85,17 @@ async def remove_privilege(session: Session, privilege: int) -> None:
 
     await usecases.accounts.update_privileges(session)
     await repositories.sessions.update(session)
+
+
+async def logout(session: Session) -> None:
+    # TODO: remove spectating once implemented
+
+    for channel in session.channels:
+        await usecases.channels.remove_user(channel, session.id)
+        session.channels.remove(channel)
+
+    if session.privileges & Privileges.USER_PUBLIC:
+        await repositories.sessions.enqueue_data(usecases.packets.logout(session.id))
+
+    await repositories.sessions.delete(session)
+    logging.info(f"{session!r} logged out")

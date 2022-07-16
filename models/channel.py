@@ -13,4 +13,4 @@ class Channel(BaseModel):
     temp: bool
     hidden: bool
 
-    members: set[int]
+    members: list[int]

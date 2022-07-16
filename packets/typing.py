@@ -4,6 +4,7 @@ import struct
 from typing import Any
 from typing import Awaitable
 from typing import Callable
+from typing import Collection
 from typing import Sequence
 from typing import TypeVar
 
@@ -86,7 +87,7 @@ class i32(osuType, int):
 
 class i32_list(osuType, Sequence[int]):
     @classmethod
-    def read(cls, packet: Packet) -> Sequence[int]:
+    def read(cls, packet: Packet) -> Collection[int]:
         length = i16.read(packet)
         return struct.unpack(
             f"<{'I' * length}",
@@ -94,7 +95,7 @@ class i32_list(osuType, Sequence[int]):
         )
 
     @classmethod
-    def write(cls, data: Sequence[int]) -> bytearray:
+    def write(cls, data: Collection[int]) -> bytearray:
         buffer = bytearray(len(data).to_bytes(2, "little"))
 
         for item in data:

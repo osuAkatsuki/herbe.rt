@@ -17,5 +17,8 @@ class HardwareInfo(BaseModel):
 class OUIEntry(BaseModel):
     registry: str
     assignment: str
-    organisation_name: str
+    organization_name: str
     organization_address: str
+
+    def __hash__(self) -> int:
+        return hash(self.dict().values())

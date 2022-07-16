@@ -1,24 +1,24 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
-
 if TYPE_CHECKING:
-    from packets.typing import i32
-    from packets.typing import String
-    from packets.typing import u32
-    from packets.typing import u8
+    import packets.typing
 
 
-class PacketModel(BaseModel):
+class PacketModel:
     ...
 
 
 class ChangeActionPacket(PacketModel):
-    action: u8
-    action_text: String
-    map_md5: String
-    mods: u32
-    mode: u8
-    map_id: i32
+    action: packets.typing.u8
+    action_text: packets.typing.String
+    map_md5: packets.typing.String
+    mods: packets.typing.u32
+    mode: packets.typing.u8
+    map_id: packets.typing.i32
+
+
+class LogoutPacket(PacketModel):
+    _: packets.typing.i32
