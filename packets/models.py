@@ -27,3 +27,7 @@ class LogoutPacket(PacketModel):
 
 class SendMessagePacket(PacketModel):
     message: packets.typing.Message
+
+
+class StatusUpdatePacket(PacketModel):
+    _: bytes

@@ -15,7 +15,9 @@ import packets.models
 import packets.typing
 import repositories.channels
 import repositories.sessions
+import repositories.stats
 import usecases.channels
+import usecases.packets
 import usecases.sessions
 from constants.mode import Mode
 from constants.packets import Packets
@@ -25,6 +27,7 @@ from packets.models import ChangeActionPacket
 from packets.models import LogoutPacket
 from packets.models import PacketModel
 from packets.models import SendMessagePacket
+from packets.models import StatusUpdatePacket
 from packets.reader import Packet
 from packets.reader import PacketArray
 from packets.typing import osuType
@@ -225,3 +228,12 @@ async def public_message(packet: SendMessagePacket, session: Session) -> None:
     # TODO: commands
 
     logging.info(f"{session!r} sent a message to {recipient}: {msg}")
+
+
+@register_packet(Packets.OSU_REQUEST_STATUS_UPDATE, allow_restricted=True)
+async def status_update(packet: StatusUpdatePacket, session: Session) -> None:
+    stats = await repositories.stats.fetch(session.id, session.status.mode)
+    await usecases.sessions.enqueue_data(
+        session.id,
+        usecases.packets.user_stats(session, stats),
+    )
