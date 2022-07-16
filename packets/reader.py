@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import struct
+from typing import Awaitable
+from typing import Callable
 from typing import Iterator
-from typing import TYPE_CHECKING
 
 from constants.packets import Packets
-
-if TYPE_CHECKING:
-    from packets.typing import PacketWrapper
+from models.user import Session
 
 
 def parse_header(data: bytearray) -> tuple[Packets, int]:
@@ -28,6 +27,7 @@ class Packet:
 
     def read_header(self) -> None:
         self.packet_id, self.length = parse_header(self.data)
+        self.offset(7)
 
     def offset(self, count: int) -> None:
         self.data = self.data[count:]
@@ -37,6 +37,9 @@ class Packet:
         self.offset(count)
 
         return data
+
+
+PacketWrapper = Callable[[Packet, Session], Awaitable[None]]
 
 
 class PacketArray:

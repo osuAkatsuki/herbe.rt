@@ -5,8 +5,10 @@ import inspect
 import logging
 import time
 import typing
+from typing import Awaitable
 from typing import Callable
 from typing import Optional
+from typing import TypeVar
 from typing import Union
 
 import packets.models
@@ -23,9 +25,11 @@ from packets.models import PacketModel
 from packets.reader import Packet
 from packets.reader import PacketArray
 from packets.typing import osuType
-from packets.typing import PacketHandler
-from packets.typing import PacketWrapper
 
+
+PacketWrapper = Callable[[Packet, Session], Awaitable[None]]
+PacketModelType = TypeVar("PacketModelType", bound=PacketModel)
+PacketHandler = Callable[[PacketModelType, Session], Awaitable[None]]
 
 HANDLERS: dict[Packets, PacketWrapper] = {}
 RESTRICTED_HANDLERS: dict[Packets, PacketWrapper] = {}
@@ -109,21 +113,22 @@ def register_packet(
             if not structure_class:
                 raise RuntimeError(f"Invalid packet model: {structure_class_name}")
 
-            data = structure_class()
+            data: dict[str, Union[bytes, PacketModel]] = {}
             for field, _type in structure_class.__annotations__.items():
                 _type = typing.cast(str, _type)
 
                 if _type == "bytes":
-                    data.__dict__[field] = bytes(packet.data)
+                    data[field] = bytes(packet.data)
                     packet.data.clear()
                 else:
                     data_type_class = get_packet_data_type_from_name(_type.strip("'"))
                     if not data_type_class:
                         raise RuntimeError(f"Invalid packet data type: {_type}")
 
-                    data.__dict__[field] = data_type_class.read(packet)
+                    data[field] = data_type_class.read(packet)
 
-            return await handler(data, session)
+            packet_model = structure_class(**data)
+            return await handler(packet_model, session)
 
         HANDLERS[packet_id] = wrapper
         if allow_restricted:
@@ -154,6 +159,7 @@ async def handle_packet_data(data: bytearray, session: Session) -> None:
 
 @register_packet(Packets.OSU_CHANGE_ACTION, allow_restricted=True)
 async def change_action(packet: ChangeActionPacket, session: Session) -> None:
+    print(packet.dict())
     session.status.action = packet.action
     session.status.action_text = packet.action_text
     session.status.map_md5 = packet.map_md5
@@ -164,7 +170,7 @@ async def change_action(packet: ChangeActionPacket, session: Session) -> None:
     logging.info(f"Updated {session!r}'s status. New action: {packet.action}")
 
 
-@register_packet(Packets.CHO_USER_LOGOUT, allow_restricted=True)
+@register_packet(Packets.OSU_LOGOUT, allow_restricted=True)
 async def user_logout(packet: LogoutPacket, session: Session) -> None:
     if (time.time() - session.login_time) < 1.0:
         # osu! has a weird tendency to log out immediately after login.

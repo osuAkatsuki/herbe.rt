@@ -2,19 +2,10 @@ from __future__ import annotations
 
 import struct
 from typing import Any
-from typing import Awaitable
-from typing import Callable
 from typing import Collection
 from typing import Sequence
-from typing import TypeVar
 
-from models.user import Session
-from packets.models import PacketModel
 from packets.reader import Packet
-
-PacketWrapper = Callable[[Packet, Session], Awaitable[None]]
-PacketModelType = TypeVar("PacketModelType", bound=PacketModel)
-PacketHandler = Callable[[PacketModelType, Session], Awaitable[None]]
 
 
 def read_int(data: bytearray, signed: bool = True) -> int:

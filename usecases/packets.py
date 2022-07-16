@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from functools import cache
 from functools import lru_cache
+from typing import Awaitable
+from typing import Callable
 from typing import Collection
 from typing import Sequence
+from typing import TypeVar
 
 from constants.packets import Packets
 from models.channel import Channel
 from models.stats import Stats
 from models.user import Session
+from packets.models import PacketModel
 from packets.typing import f32
 from packets.typing import i16
 from packets.typing import i32
@@ -16,11 +20,12 @@ from packets.typing import i32_list
 from packets.typing import i64
 from packets.typing import Message
 from packets.typing import OsuChannel
-from packets.typing import PacketHandler
 from packets.typing import String
 from packets.typing import u8
 from packets.writer import PacketWriter
 
+PacketModelType = TypeVar("PacketModelType", bound=PacketModel)
+PacketHandler = Callable[[PacketModelType, Session], Awaitable[None]]
 PACKETS: dict[Packets, PacketHandler] = {}
 
 

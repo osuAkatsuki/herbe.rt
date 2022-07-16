@@ -147,17 +147,33 @@ async def add_to_session_list(session: Session) -> None:
         )
 
 
+async def remove_from_session_list(session: Session) -> None:
+    async with RedisLock(
+        services.redis,
+        f"akatsuki:herbert:locks:session_list",
+    ):
+        await services.redis.lrem(
+            "akatsuki:herbert:session_list",
+            0,
+            session.id,
+        )
+
+
 async def enqueue_data(data: bytearray) -> None:
     for session in await fetch_all():
         await usecases.sessions.enqueue_data(session.id, data)
 
 
 async def delete(session: Session) -> None:
-    for redis_name, redis_key in (
-        ("akatsuki:herbert:sessions:id", session.id),
-        ("akatsuki:herbert:sessions:name", utils.make_safe_name(session.name)),
-        ("akatsuki:herbert:sessions:token", session.token),
+    async with RedisLock(
+        services.redis,
+        f"akatsuki:herbert:locks:sessions:{session.id}",
     ):
-        await services.redis.hdel(redis_name, redis_key)
+        for redis_name, redis_key in (
+            ("akatsuki:herbert:sessions:id", session.id),
+            ("akatsuki:herbert:sessions:name", utils.make_safe_name(session.name)),
+            ("akatsuki:herbert:sessions:token", session.token),
+        ):
+            await services.redis.hdel(redis_name, redis_key)
 
-    await services.redis.lrem("akatsuki:herbert:session_list", 0, session.id)
+    await remove_from_session_list(session)

@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from pydantic import BaseModel
 
-if TYPE_CHECKING:
-    import packets.typing
+import packets.typing
 
 
-class PacketModel:
+class PacketModel(BaseModel):
     ...
 
 

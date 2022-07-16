@@ -94,8 +94,9 @@ async def logout(session: Session) -> None:
         await usecases.channels.remove_user(channel, session.id)
         session.channels.remove(channel)
 
+    await dequeue_data(session.id)  # clear session data
+    await repositories.sessions.delete(session)
     if session.privileges & Privileges.USER_PUBLIC:
         await repositories.sessions.enqueue_data(usecases.packets.logout(session.id))
 
-    await repositories.sessions.delete(session)
     logging.info(f"{session!r} logged out")
