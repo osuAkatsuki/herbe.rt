@@ -8,6 +8,7 @@ import typing
 from typing import Awaitable
 from typing import Callable
 from typing import Optional
+from typing import Sequence
 from typing import TypeVar
 from typing import Union
 
@@ -29,11 +30,15 @@ from packets.models import ChannelPacket
 from packets.models import FriendPacket
 from packets.models import LogoutPacket
 from packets.models import PacketModel
+from packets.models import PresenceRequestAllPacket
+from packets.models import PresenceRequestPacket
 from packets.models import SendMessagePacket
 from packets.models import SpectateFramesPacket
 from packets.models import StartSpectatingPacket
+from packets.models import StatsRequestPacket
 from packets.models import StatusUpdatePacket
 from packets.models import StopSpectatingPacket
+from packets.models import ToggleDMPacket
 from packets.reader import Packet
 from packets.reader import PacketArray
 from packets.typing import osuType
@@ -416,3 +421,80 @@ async def remove_friend(packet: FriendPacket, session: Session) -> None:
         return
 
     await usecases.sessions.remove_friend(session, target_session)
+
+
+@register_packet(Packets.OSU_USER_STATS_REQUEST)
+async def stats_request(packet: StatsRequestPacket, session: Session) -> None:
+    buffer = bytearray()
+
+    for target_session in await repositories.sessions.fetch_all():
+        if target_session not in packet.session_ids:
+            continue
+
+        if not target_session.privileges & Privileges.USER_PUBLIC:
+            continue
+
+        target_stats = await repositories.stats.fetch(
+            target_session.id,
+            target_session.status.mode,
+        )
+
+        buffer += usecases.packets.user_stats(target_session, target_stats)
+
+    await usecases.sessions.enqueue_data(
+        session.id,
+        buffer,
+    )
+
+
+@register_packet(Packets.OSU_USER_PRESENCE_REQUEST)
+async def presence_request(packet: PresenceRequestPacket, session: Session) -> None:
+    buffer = bytearray()
+
+    for target_session in await repositories.sessions.fetch_all():
+        if target_session not in packet.session_ids:
+            continue
+
+        if not target_session.privileges & Privileges.USER_PUBLIC:
+            continue
+
+        target_stats = await repositories.stats.fetch(
+            target_session.id,
+            target_session.status.mode,
+        )
+
+        buffer += usecases.packets.user_presence(target_session, target_stats)
+
+    await usecases.sessions.enqueue_data(
+        session.id,
+        buffer,
+    )
+
+
+@register_packet(Packets.OSU_USER_PRESENCE_REQUEST_ALL)
+async def presence_request_all(
+    packet: PresenceRequestAllPacket,
+    session: Session,
+) -> None:
+    buffer = bytearray()
+
+    for target_session in await repositories.sessions.fetch_all():
+        if not target_session.privileges & Privileges.USER_PUBLIC:
+            continue
+
+        target_stats = await repositories.stats.fetch(
+            target_session.id,
+            target_session.status.mode,
+        )
+
+        buffer += usecases.packets.user_presence(target_session, target_stats)
+
+    await usecases.sessions.enqueue_data(
+        session.id,
+        buffer,
+    )
+
+
+@register_packet(Packets.OSU_TOGGLE_BLOCK_NON_FRIEND_DMS)
+async def toggle_dms(packet: ToggleDMPacket, session: Session) -> None:
+    session.friend_only_dms = packet.value == 1

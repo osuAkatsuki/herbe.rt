@@ -55,3 +55,19 @@ class ChannelPacket(PacketModel):
 
 class FriendPacket(PacketModel):
     target_id: packets.typing.i32
+
+
+class StatsRequestPacket(PacketModel):
+    session_ids: packets.typing.i32_list
+
+
+class PresenceRequestPacket(PacketModel):
+    session_ids: packets.typing.i32_list
+
+
+class PresenceRequestAllPacket(PacketModel):
+    _: bytes
+
+
+class ToggleDMPacket(PacketModel):
+    value: packets.typing.i32

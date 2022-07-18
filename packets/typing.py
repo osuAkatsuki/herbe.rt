@@ -77,7 +77,7 @@ class i32(osuType, int):
 
 class i32_list(osuType, Sequence[int]):
     @classmethod
-    def read(cls, packet: Packet) -> Collection[int]:
+    def read(cls, packet: Packet) -> Sequence[int]:
         length = i16.read(packet)
         return struct.unpack(
             f"<{'I' * length}",
