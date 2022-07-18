@@ -15,11 +15,11 @@ class PacketWriter:
     def from_id(cls, packet_id: Packets) -> PacketWriter:
         return cls(bytearray(), packet_id)
 
-    def __iadd__(self, other: bytearray) -> PacketWriter:
+    def __iadd__(self, other: bytes) -> PacketWriter:
         self.write(other)
         return self
 
-    def write(self, data: bytearray) -> None:
+    def write(self, data: bytes) -> None:
         self.data += data
 
     def serialise(self) -> bytearray:

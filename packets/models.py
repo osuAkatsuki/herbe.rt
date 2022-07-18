@@ -31,3 +31,11 @@ class SendMessagePacket(PacketModel):
 
 class StatusUpdatePacket(PacketModel):
     _: bytes
+
+
+class StartSpectatingPacket(PacketModel):
+    target_id: packets.typing.i32
+
+
+class StopSpectatingPacket(PacketModel):
+    _: bytes

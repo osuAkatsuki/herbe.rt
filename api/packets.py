@@ -27,7 +27,9 @@ from packets.models import ChangeActionPacket
 from packets.models import LogoutPacket
 from packets.models import PacketModel
 from packets.models import SendMessagePacket
+from packets.models import StartSpectatingPacket
 from packets.models import StatusUpdatePacket
+from packets.models import StopSpectatingPacket
 from packets.reader import Packet
 from packets.reader import PacketArray
 from packets.typing import osuType
@@ -237,3 +239,28 @@ async def status_update(packet: StatusUpdatePacket, session: Session) -> None:
         session.id,
         usecases.packets.user_stats(session, stats),
     )
+
+
+@register_packet(Packets.OSU_START_SPECTATING)
+async def start_spectating(packet: StartSpectatingPacket, session: Session) -> None:
+    if not (host_session := await repositories.sessions.fetch_by_id(packet.target_id)):
+        logging.warning(
+            f"{session!r} tried to spectate user ID {packet.target_id}, but they could not be found",
+        )
+        return
+
+    if session.spectating and session.spectating != packet.target_id:
+        await usecases.sessions.remove_spectator(session.spectating, session)
+
+    await usecases.sessions.add_spectator(host_session, session)
+
+
+@register_packet(Packets.OSU_STOP_SPECTATING)
+async def stop_spectating(packet: StopSpectatingPacket, session: Session) -> None:
+    if not session.spectating:
+        logging.warning(
+            f"{session!r} tried to stop spectating without spectating anyone",
+        )
+        return
+
+    await usecases.sessions.remove_spectator(session.spectating, session)

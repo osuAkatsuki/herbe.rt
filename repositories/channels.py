@@ -13,14 +13,6 @@ from models.channel import Channel
 from objects.redis_lock import RedisLock
 
 
-async def fetch_by_id(id: int) -> Optional[Channel]:
-    channel_dict = await services.redis.hget("akatsuki:herbert:channels:id", id)
-    if not channel_dict:
-        return None
-
-    return Channel(**json.loads(channel_dict))
-
-
 async def fetch_by_name(name: str) -> Optional[Channel]:
     channel_dict = await services.redis.hget(
         "akatsuki:herbert:channels:name",
@@ -44,40 +36,46 @@ async def update(channel: Channel) -> None:
         services.redis,
         f"akatsuki:herbert:locks:channels:{channel.name}",
     ):
-        channel_dump = json.dumps(channel.dict())
-
-        for redis_name, redis_key in (
-            ("akatsuki:herbert:channels:id", channel.id),
-            ("akatsuki:herbert:channels:name", channel.name),
-        ):
-            await services.redis.hset(
-                name=redis_name,
-                key=redis_key,
-                value=channel_dump,
-            )
+        await services.redis.hset(
+            name="akatsuki:herbert:channels:name",
+            key=channel.name,
+            value=json.dumps(channel.dict()),
+        )
 
         channel_info_packet = usecases.packets.channel_info(channel)
-        for target in await repositories.sessions.fetch_all():
-            if (
-                channel.public_read
-                or target.privileges & Privileges.ADMIN_MANAGE_USERS
-                or target in channel.members
-            ):
-                await usecases.sessions.enqueue_data(target.id, channel_info_packet)
+
+        if channel.temp:
+            for target in channel.members:
+                await usecases.sessions.enqueue_data(target, channel_info_packet)
+        else:
+            for target in await repositories.sessions.fetch_all():
+                if (
+                    channel.public_read
+                    or target.privileges & Privileges.ADMIN_MANAGE_USERS
+                    or target in channel.members
+                ):
+                    await usecases.sessions.enqueue_data(target.id, channel_info_packet)
+
+
+async def delete(channel: Channel) -> None:
+    async with RedisLock(
+        services.redis,
+        f"akatsuki:herbert:locks:channels:{channel.name}",
+    ):
+        await services.redis.hdel("akatsuki:herbert:channels:name", channel.name)
 
 
 async def initialise_channels() -> None:
     current_channels = await fetch_all()
 
     db_channels = await services.database.fetch_all(
-        "SELECT id, name, description, public_read, public_write, temp, hidden FROM bancho_channels",
+        "SELECT name, description, public_read, public_write, temp, hidden FROM bancho_channels",
     )
     for db_channel in db_channels:
         if any(db_channel["name"] == channel.name for channel in current_channels):
             continue
 
         channel_info = {
-            "id": db_channel["id"],
             "name": db_channel["name"],
             "description": db_channel["description"],
             "public_read": db_channel["public_read"],

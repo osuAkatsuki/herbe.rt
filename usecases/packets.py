@@ -181,3 +181,44 @@ def logout(user_id: int) -> bytearray:
     packet += u8.write(0)  # ?
 
     return packet.serialise()
+
+
+@cache
+def spectator_joined(user_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_FELLOW_SPECTATOR_JOINED)
+    packet += i32.write(user_id)
+    return packet.serialise()
+
+
+@cache
+def host_spectator_joined(user_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_SPECTATOR_JOINED)
+    packet += i32.write(user_id)
+    return packet.serialise()
+
+
+@cache
+def spectator_left(user_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_FELLOW_SPECTATOR_LEFT)
+    packet += i32.write(user_id)
+    return packet.serialise()
+
+
+@cache
+def host_spectator_left(user_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_SPECTATOR_LEFT)
+    packet += i32.write(user_id)
+    return packet.serialise()
+
+
+def spectate_frames(frames: bytes) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_SPECTATE_FRAMES)
+    packet += frames
+    return packet.serialise()
+
+
+@cache
+def cant_spectate(user_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_SPECTATOR_CANT_SPECTATE)
+    packet += i32.write(user_id)
+    return packet.serialise()
