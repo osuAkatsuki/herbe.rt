@@ -14,6 +14,7 @@ from constants.privileges import Privileges
 from models.channel import Channel
 from models.user import Session
 from objects.redis_lock import RedisLock
+from packets.typing import Message
 
 
 async def enqueue_data(user_id: int, data: bytearray) -> None:
@@ -183,3 +184,21 @@ async def remove_spectator(host_id: int, spectator: Session) -> None:
     await repositories.sessions.update(spectator)
 
     logging.info(f"{spectator!r} stopped spectating {host_session!r}")
+
+
+async def receive_message(
+    session: Session,
+    message_content: str,
+    sender: Session,
+) -> None:
+    await enqueue_data(
+        session.id,
+        usecases.packets.send_message(
+            Message(
+                sender.name,
+                message_content,
+                session.name,
+                sender.id,
+            ),
+        ),
+    )

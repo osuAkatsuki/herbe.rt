@@ -48,13 +48,16 @@ async def update(channel: Channel) -> None:
             for target in channel.members:
                 await usecases.sessions.enqueue_data(target, channel_info_packet)
         else:
-            for target in await repositories.sessions.fetch_all():
+            for target_session in await repositories.sessions.fetch_all():
                 if (
                     channel.public_read
-                    or target.privileges & Privileges.ADMIN_MANAGE_USERS
-                    or target in channel.members
+                    or target_session.privileges & Privileges.ADMIN_MANAGE_USERS
+                    or target_session in channel.members
                 ):
-                    await usecases.sessions.enqueue_data(target.id, channel_info_packet)
+                    await usecases.sessions.enqueue_data(
+                        target_session.id,
+                        channel_info_packet,
+                    )
 
 
 async def delete(channel: Channel) -> None:

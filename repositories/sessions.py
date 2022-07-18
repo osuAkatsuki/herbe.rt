@@ -117,7 +117,7 @@ async def update(session: Session) -> None:
         session_dump = json.dumps(session.dict())
 
         for redis_name, redis_key in (
-            ("akatsuki:herbert:sessions:id", session.id),
+            ("akatsuki:herbert:sessions:id", str(session.id)),
             ("akatsuki:herbert:sessions:name", utils.make_safe_name(session.name)),
             ("akatsuki:herbert:sessions:token", session.token),
         ):
@@ -170,7 +170,7 @@ async def delete(session: Session) -> None:
         f"akatsuki:herbert:locks:sessions:{session.id}",
     ):
         for redis_name, redis_key in (
-            ("akatsuki:herbert:sessions:id", session.id),
+            ("akatsuki:herbert:sessions:id", str(session.id)),
             ("akatsuki:herbert:sessions:name", utils.make_safe_name(session.name)),
             ("akatsuki:herbert:sessions:token", session.token),
         ):

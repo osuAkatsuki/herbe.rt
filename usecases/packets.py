@@ -222,3 +222,17 @@ def cant_spectate(user_id: int) -> bytearray:
     packet = PacketWriter.from_id(Packets.CHO_SPECTATOR_CANT_SPECTATE)
     packet += i32.write(user_id)
     return packet.serialise()
+
+
+@lru_cache(maxsize=8)
+def private_message_blocked(recipient_name: str) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_USER_DM_BLOCKED)
+    packet += String.write(recipient_name)
+    return packet.serialise()
+
+
+@lru_cache(maxsize=8)
+def target_silenced(recipient_name: str) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_TARGET_IS_SILENCED)
+    packet += String.write(recipient_name)
+    return packet.serialise()

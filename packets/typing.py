@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import struct
+from abc import abstractmethod
 from typing import Any
 from typing import Collection
 from typing import Optional
@@ -18,12 +19,9 @@ def read_float(data: bytearray) -> float:
 
 
 class osuType:
+    @abstractmethod
     @classmethod
     def read(cls, packet: Packet) -> Any:
-        ...
-
-    @classmethod
-    def write(cls, data: Any) -> bytearray:
         ...
 
 

@@ -207,8 +207,15 @@ async def public_message(packet: SendMessagePacket, session: Session) -> None:
     if recipient in IGNORED_CHANNELS:
         return
 
-    # TODO: spec chats, multi chats
-    channel = await repositories.channels.fetch_by_name(recipient)
+    if recipient == "#spectator":
+        channel = await repositories.channels.fetch_by_name(
+            f"#spec_{session.spectating}",
+        )
+    else:
+        channel = await repositories.channels.fetch_by_name(recipient)
+
+    # TODO: multi channels
+
     if not channel:
         logging.warning(
             f"{session!r} tried to write to non-existent channel {recipient}",
@@ -228,9 +235,6 @@ async def public_message(packet: SendMessagePacket, session: Session) -> None:
         return
 
     await usecases.channels.send_message(channel, msg, session)
-
-    # TODO: commands
-
     logging.info(f"{session!r} sent a message to {recipient}: {msg}")
 
 
@@ -299,3 +303,36 @@ async def cant_spectate(packet: CantSpectateStructure, session: Session) -> None
 
     for spectator in host_session.spectators:
         await usecases.sessions.enqueue_data(spectator, cant_spectate_packet)
+
+
+@register_packet(Packets.OSU_SEND_PRIVATE_MESSAGE)
+async def send_private_message(packet: SendMessagePacket, session: Session) -> None:
+    if session.silenced:
+        logging.warning(f"{session!r} tried to send a message while silenced")
+        return
+
+    msg = packet.message.content.strip()
+    if not msg:
+        return
+
+    recipient = packet.message.recipient_username
+    if not (recipient_session := await repositories.sessions.fetch_by_name(recipient)):
+        logging.warning(f"{session!r} tried to DM {recipient} while they are offline")
+        return
+
+    if (
+        recipient_session.friend_only_dms
+        and session.id not in recipient_session.friends
+    ):
+        await usecases.sessions.enqueue_data(
+            session.id,
+            usecases.packets.private_message_blocked(recipient),
+        )
+
+    if recipient_session.silenced:
+        await usecases.sessions.enqueue_data(
+            session.id,
+            usecases.packets.target_silenced(recipient),
+        )
+
+    await usecases.sessions.receive_message(recipient_session, msg, session)

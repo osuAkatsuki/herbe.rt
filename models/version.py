@@ -23,7 +23,11 @@ class OsuVersion(BaseModel):
 
         return f"b{version}"
 
-    def dict(self) -> dict[str, Any]:
+    def dict(
+        self,
+        *args,
+        **kwargs,
+    ) -> dict[str, Any]:
         return {
             "date": self.date.isoformat(),
             "stream": self.stream,

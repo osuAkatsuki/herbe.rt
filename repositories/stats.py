@@ -17,6 +17,7 @@ async def fetch(user_id: int, mode: Mode) -> Stats:
         ).format(m=mode.stats_prefix, s=mode.stats_table),
         {"id": user_id},
     )
+    assert db_stats is not None
 
     global_rank = await get_redis_rank(user_id, mode)
 

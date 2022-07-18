@@ -136,7 +136,11 @@ class Session(Account):
     def silenced(self) -> bool:
         return self.silence_expire > int(time.time())
 
-    def dict(self) -> dict[str, Any]:
+    def dict(
+        self,
+        *args,
+        **kwargs,
+    ) -> dict[str, Any]:
         return {
             "id": self.id,
             "token": self.token,

@@ -28,7 +28,11 @@ class Geolocation(BaseModel):
 
     ip: Optional[str] = None
 
-    def dict(self) -> dict[str, Any]:
+    def dict(
+        self,
+        *args,
+        **kwargs,
+    ) -> dict[str, Any]:
         return {
             "long": self.long,
             "lat": self.lat,
