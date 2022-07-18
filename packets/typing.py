@@ -19,8 +19,8 @@ def read_float(data: bytearray) -> float:
 
 
 class osuType:
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def read(cls, packet: Packet) -> Any:
         ...
 

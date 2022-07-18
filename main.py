@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-import uvicorn
+import uvicorn  # type: ignore[import]
 import uvloop
 
 import settings

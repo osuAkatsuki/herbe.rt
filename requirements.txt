@@ -8,6 +8,7 @@ anyio==3.6.1
 async-timeout==4.0.2
 asyncmy==0.2.5
 attrs==21.4.0
+bcrypt==3.2.2
 billiard==3.6.4.0
 black==22.6.0
 Brotli==1.0.9
@@ -29,6 +30,7 @@ idna==3.3
 kombu==5.2.4
 maxminddb==2.2.0
 multidict==6.0.2
+mypy==0.961
 mypy-extensions==0.4.3
 pathspec==0.9.0
 platformdirs==2.5.2
