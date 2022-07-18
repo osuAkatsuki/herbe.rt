@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Optional
 
 import services
@@ -25,7 +24,7 @@ async def fetch_by_id(id: int) -> Optional[Account]:
         "SELECT user2 FROM users_relationships WHERE user1 = :id",
         {"id": id},
     )
-    friends_list = {entry["user2"] for entry in friends}
+    friends_list = [entry["user2"] for entry in friends]
 
     return Account(
         id=db_account["id"],
@@ -60,7 +59,7 @@ async def fetch_by_name(name: str) -> Optional[Account]:
         "SELECT user2 FROM users_relationships WHERE user1 = :id",
         {"id": db_account["id"]},
     )
-    friends_list = {entry["user2"] for entry in friends}
+    friends_list = [entry["user2"] for entry in friends]
 
     return Account(
         id=db_account["id"],

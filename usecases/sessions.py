@@ -197,3 +197,35 @@ async def receive_message(
             ),
         ),
     )
+
+
+async def add_friend(session: Session, target_session: Session) -> None:
+    if target_session.id in session.friends:
+        logging.warning(
+            f"{session!r} tried to add {target_session!r}, but they are already friends",
+        )
+        return
+
+    session.friends.append(target_session.id)
+    await services.database.execute(
+        "INSERT INTO users_relationships (user1, user2) VALUES (:session_id, :target_session_id)",
+        {"session_id": session.id, "target_session_id": target_session.id},
+    )
+
+    logging.info(f"{session!r} added {target_session!r} as a friend")
+
+
+async def remove_friend(session: Session, target_session: Session) -> None:
+    if target_session.id not in session.friends:
+        logging.warning(
+            f"{session!r} tried to remove {target_session!r}, but they are not friends",
+        )
+        return
+
+    session.friends.remove(target_session.id)
+    await services.database.execute(
+        "DELETE FROM users_relationships WHERE user1 = :session_id AND user2 = :target_session_id",
+        {"session_id": session.id, "target_session_id": target_session.id},
+    )
+
+    logging.info(f"{session!r} removed {target_session!r} from their friend list")

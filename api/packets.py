@@ -26,6 +26,7 @@ from models.user import Session
 from packets.models import CantSpectatePacket
 from packets.models import ChangeActionPacket
 from packets.models import ChannelPacket
+from packets.models import FriendPacket
 from packets.models import LogoutPacket
 from packets.models import PacketModel
 from packets.models import SendMessagePacket
@@ -391,3 +392,27 @@ async def leave_channel(packet: ChannelPacket, session: Session) -> None:
         return
 
     await usecases.sessions.leave_channel(session, packet.channel_name)
+
+
+@register_packet(Packets.OSU_FRIEND_ADD)
+async def add_friend(packet: FriendPacket, session: Session) -> None:
+    target_session = await repositories.sessions.fetch_by_id(packet.target_id)
+    if not target_session:
+        logging.warning(
+            f"{session!r} tried to friend user ID {packet.target_id}, but they are not online",
+        )
+        return
+
+    await usecases.sessions.add_friend(session, target_session)
+
+
+@register_packet(Packets.OSU_FRIEND_REMOVE)
+async def remove_friend(packet: FriendPacket, session: Session) -> None:
+    target_session = await repositories.sessions.fetch_by_id(packet.target_id)
+    if not target_session:
+        logging.warning(
+            f"{session!r} tried to remove user ID {packet.target_id} from their friends list, but they are not online",
+        )
+        return
+
+    await usecases.sessions.remove_friend(session, target_session)

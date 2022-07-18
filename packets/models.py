@@ -51,3 +51,7 @@ class CantSpectatePacket(PacketModel):
 
 class ChannelPacket(PacketModel):
     channel_name: packets.typing.String
+
+
+class FriendPacket(PacketModel):
+    target_id: packets.typing.i32
