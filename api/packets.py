@@ -23,10 +23,12 @@ from constants.mode import Mode
 from constants.packets import Packets
 from constants.privileges import Privileges
 from models.user import Session
+from packets.models import CantSpectateStructure
 from packets.models import ChangeActionPacket
 from packets.models import LogoutPacket
 from packets.models import PacketModel
 from packets.models import SendMessagePacket
+from packets.models import SpectateFramesStructure
 from packets.models import StartSpectatingPacket
 from packets.models import StatusUpdatePacket
 from packets.models import StopSpectatingPacket
@@ -264,3 +266,36 @@ async def stop_spectating(packet: StopSpectatingPacket, session: Session) -> Non
         return
 
     await usecases.sessions.remove_spectator(session.spectating, session)
+
+
+@register_packet(Packets.OSU_SPECTATE_FRAMES)
+async def spectate_frames(packet: SpectateFramesStructure, session: Session) -> None:
+    if not session.spectators:
+        logging.warning(
+            f"{session!r} sent spectate packets while nobody is spectating them",
+        )
+        return
+
+    for spectator in session.spectators:
+        await usecases.sessions.enqueue_data(
+            spectator,
+            usecases.packets.spectate_frames(packet.frame_bundle.raw_data),
+        )
+
+
+@register_packet(Packets.OSU_CANT_SPECTATE)
+async def cant_spectate(packet: CantSpectateStructure, session: Session) -> None:
+    if not session.spectating:
+        logging.warning(
+            f"{session!r} sent can't spectate packet while not spectating anyone",
+        )
+        return
+
+    cant_spectate_packet = usecases.packets.cant_spectate(session.id)
+    await usecases.sessions.enqueue_data(session.spectating, cant_spectate_packet)
+
+    host_session = await repositories.sessions.fetch_by_id(session.spectating)
+    assert host_session is not None
+
+    for spectator in host_session.spectators:
+        await usecases.sessions.enqueue_data(spectator, cant_spectate_packet)
