@@ -23,12 +23,13 @@ from constants.mode import Mode
 from constants.packets import Packets
 from constants.privileges import Privileges
 from models.user import Session
-from packets.models import CantSpectateStructure
+from packets.models import CantSpectatePacket
 from packets.models import ChangeActionPacket
+from packets.models import ChannelPacket
 from packets.models import LogoutPacket
 from packets.models import PacketModel
 from packets.models import SendMessagePacket
-from packets.models import SpectateFramesStructure
+from packets.models import SpectateFramesPacket
 from packets.models import StartSpectatingPacket
 from packets.models import StatusUpdatePacket
 from packets.models import StopSpectatingPacket
@@ -273,7 +274,7 @@ async def stop_spectating(packet: StopSpectatingPacket, session: Session) -> Non
 
 
 @register_packet(Packets.OSU_SPECTATE_FRAMES)
-async def spectate_frames(packet: SpectateFramesStructure, session: Session) -> None:
+async def spectate_frames(packet: SpectateFramesPacket, session: Session) -> None:
     if not session.spectators:
         logging.warning(
             f"{session!r} sent spectate packets while nobody is spectating them",
@@ -288,7 +289,7 @@ async def spectate_frames(packet: SpectateFramesStructure, session: Session) -> 
 
 
 @register_packet(Packets.OSU_CANT_SPECTATE)
-async def cant_spectate(packet: CantSpectateStructure, session: Session) -> None:
+async def cant_spectate(packet: CantSpectatePacket, session: Session) -> None:
     if not session.spectating:
         logging.warning(
             f"{session!r} sent can't spectate packet while not spectating anyone",
@@ -336,3 +337,57 @@ async def send_private_message(packet: SendMessagePacket, session: Session) -> N
         )
 
     await usecases.sessions.receive_message(recipient_session, msg, session)
+
+
+@register_packet(Packets.OSU_CHANNEL_JOIN)
+async def join_channel(packet: ChannelPacket, session: Session) -> None:
+    if packet.channel_name in IGNORED_CHANNELS:
+        return
+
+    if packet.channel_name == "#spectator" and session.spectating:
+        channel = await repositories.channels.fetch_by_name(
+            f"#spec_{session.spectating}",
+        )
+    else:
+        channel = await repositories.channels.fetch_by_name(packet.channel_name)
+
+    if not channel:
+        logging.warning(
+            f"{session!r} tried to join non-existent channel {packet.channel_name}",
+        )
+        return
+
+    if session in channel.members:
+        logging.warning(
+            f"{session!r} tried to join {channel.name}, but they are already in it",
+        )
+        return
+
+    await usecases.sessions.join_channel(session, channel)
+
+
+@register_packet(Packets.OSU_CHANNEL_PART)
+async def leave_channel(packet: ChannelPacket, session: Session) -> None:
+    if packet.channel_name in IGNORED_CHANNELS:
+        return
+
+    if packet.channel_name == "#spectator" and session.spectating:
+        channel = await repositories.channels.fetch_by_name(
+            f"#spec_{session.spectating}",
+        )
+    else:
+        channel = await repositories.channels.fetch_by_name(packet.channel_name)
+
+    if not channel:
+        logging.warning(
+            f"{session!r} tried to leave non-existent channel {packet.channel_name}",
+        )
+        return
+
+    if session not in channel.members:
+        logging.warning(
+            f"{session!r} tried to leave {packet.channel_name}, but they are not in it",
+        )
+        return
+
+    await usecases.sessions.leave_channel(session, packet.channel_name)

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import re
+import typing
 from datetime import date
+from typing import Literal
 from typing import Optional
 
 from models.version import OsuVersion
@@ -17,6 +19,12 @@ def parse_osu_version(osu_version: str) -> Optional[OsuVersion]:
     if ver_match is None:
         return None
 
+    stream: str = ver_match["stream"] if ver_match["stream"] else "stable"
+    stream = typing.cast(
+        Literal["stable", "beta", "cuttingedge", "tourney", "dev"],
+        stream,
+    )
+
     osu_ver = OsuVersion(
         date=date(
             year=int(ver_match["date"][0:4]),
@@ -24,7 +32,7 @@ def parse_osu_version(osu_version: str) -> Optional[OsuVersion]:
             day=int(ver_match["date"][6:8]),
         ),
         revision=int(ver_match["revision"]) if ver_match["revision"] else 0,
-        stream=ver_match["stream"] or "stable",
+        stream=stream,
     )
 
     return osu_ver

@@ -81,16 +81,10 @@ async def join_channel(session: Session, channel: Channel) -> bool:
     return True
 
 
-async def leave_channel(
-    session: Session,
-    channel_name: str,
-    update_session: bool = True,
-) -> None:
+async def leave_channel(session: Session, channel_name: str) -> None:
     await usecases.channels.remove_user(channel_name, session.id)
     session.channels.remove(channel_name)
-
-    if update_session:
-        await repositories.sessions.update(session)
+    await repositories.sessions.update(session)
 
 
 async def remove_privilege(session: Session, privilege: int) -> None:
@@ -101,10 +95,11 @@ async def remove_privilege(session: Session, privilege: int) -> None:
 
 
 async def logout(session: Session) -> None:
-    # TODO: remove spectating once implemented
+    if session.spectating:
+        await remove_spectator(session.spectating, session)
 
     for channel in session.channels:
-        await leave_channel(session, channel, update_session=False)
+        await leave_channel(session, channel)
 
     await dequeue_data(session.id)  # clear session data
     await repositories.sessions.delete(session)

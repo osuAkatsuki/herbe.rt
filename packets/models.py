@@ -41,9 +41,13 @@ class StopSpectatingPacket(PacketModel):
     _: bytes
 
 
-class SpectateFramesStructure(PacketModel):
+class SpectateFramesPacket(PacketModel):
     frame_bundle: packets.typing.ReplayFrameBundle
 
 
-class CantSpectateStructure(PacketModel):
+class CantSpectatePacket(PacketModel):
     _: bytes
+
+
+class ChannelPacket(PacketModel):
+    channel_name: packets.typing.String
