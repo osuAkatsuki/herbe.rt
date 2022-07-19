@@ -34,16 +34,22 @@ from models.user import Session
 from packets.models import CantSpectatePacket
 from packets.models import ChangeActionPacket
 from packets.models import ChangeMatchSettingsPacket
+from packets.models import ChangePasswordPacket
 from packets.models import ChangeSlotPacket
+from packets.models import ChangeTeamPacket
 from packets.models import ChannelPacket
 from packets.models import FriendPacket
 from packets.models import HasBeatmapPacket
+from packets.models import JoinMatchChannelPacket
 from packets.models import JoinMatchPacket
+from packets.models import LeaveMatchChannelPacket
 from packets.models import LeaveMatchPacket
 from packets.models import LobbyPacket
 from packets.models import LockSlotPacket
 from packets.models import LogoutPacket
 from packets.models import MatchCompletePacket
+from packets.models import MatchInfoPacket
+from packets.models import MatchInvitePacket
 from packets.models import MatchLoadCompletePacket
 from packets.models import MatchPacket
 from packets.models import MatchReadyPacket
@@ -54,6 +60,7 @@ from packets.models import PlayerFailedPacket
 from packets.models import PresenceRequestAllPacket
 from packets.models import PresenceRequestPacket
 from packets.models import SendMessagePacket
+from packets.models import SetAwayMessagePacket
 from packets.models import SkipRequestPacket
 from packets.models import SpectateFramesPacket
 from packets.models import StartMatchPacket
@@ -64,6 +71,7 @@ from packets.models import StopSpectatingPacket
 from packets.models import ToggleDMPacket
 from packets.models import TransferHostPacket
 from packets.models import UnreadyPacket
+from packets.models import UpdatePresencePacket
 from packets.reader import Packet
 from packets.reader import PacketArray
 from packets.typing import i32
@@ -449,7 +457,7 @@ async def remove_friend(packet: FriendPacket, session: Session) -> None:
     await usecases.sessions.remove_friend(session, target_session)
 
 
-@register_packet(Packets.OSU_USER_STATS_REQUEST)
+@register_packet(Packets.OSU_USER_STATS_REQUEST, allow_restricted=True)
 async def stats_request(packet: StatsRequestPacket, session: Session) -> None:
     buffer = bytearray()
 
@@ -457,7 +465,10 @@ async def stats_request(packet: StatsRequestPacket, session: Session) -> None:
         if target_session not in packet.session_ids:
             continue
 
-        if not target_session.privileges & Privileges.USER_PUBLIC:
+        if not (
+            target_session.privileges & Privileges.USER_PUBLIC
+            or target_session.id == session.id
+        ):
             continue
 
         target_stats = await repositories.stats.fetch(
@@ -473,7 +484,7 @@ async def stats_request(packet: StatsRequestPacket, session: Session) -> None:
     )
 
 
-@register_packet(Packets.OSU_USER_PRESENCE_REQUEST)
+@register_packet(Packets.OSU_USER_PRESENCE_REQUEST, allow_restricted=True)
 async def presence_request(packet: PresenceRequestPacket, session: Session) -> None:
     buffer = bytearray()
 
@@ -481,7 +492,10 @@ async def presence_request(packet: PresenceRequestPacket, session: Session) -> N
         if target_session not in packet.session_ids:
             continue
 
-        if not target_session.privileges & Privileges.USER_PUBLIC:
+        if not (
+            target_session.privileges & Privileges.USER_PUBLIC
+            or target_session.id == session.id
+        ):
             continue
 
         target_stats = await repositories.stats.fetch(
@@ -505,7 +519,10 @@ async def presence_request_all(
     buffer = bytearray()
 
     for target_session in await repositories.sessions.fetch_all():
-        if not target_session.privileges & Privileges.USER_PUBLIC:
+        if not (
+            target_session.privileges & Privileges.USER_PUBLIC
+            or target_session.id == session.id
+        ):
             continue
 
         target_stats = await repositories.stats.fetch(
@@ -1026,3 +1043,126 @@ async def transfer_host(packet: TransferHostPacket, session: Session) -> None:
     )
 
     await repositories.matches.update(match)
+
+
+@register_packet(Packets.OSU_MATCH_CHANGE_TEAM)
+async def change_team(packet: ChangeTeamPacket, session: Session) -> None:
+    if not session.match:
+        return
+
+    match = await repositories.matches.fetch_by_id(session.match)
+    assert match is not None
+
+    slot = match.get_slot(session.id)
+    assert slot is not None
+
+    if slot.team == MatchTeam.BLUE:
+        slot.team = MatchTeam.RED
+    else:
+        slot.team = MatchTeam.BLUE
+
+    await repositories.matches.update(match, lobby=False)
+
+
+@register_packet(Packets.OSU_MATCH_CHANGE_PASSWORD)
+async def change_password(packet: ChangePasswordPacket, session: Session) -> None:
+    if not session.match:
+        return
+
+    match = await repositories.matches.fetch_by_id(session.match)
+    assert match is not None
+
+    if session.id is not match.host_id:
+        logging.warning(f"{session!r} tried to change match password as non-host")
+        return
+
+    match.password = packet.match.password
+    await repositories.matches.update(match)
+
+
+@register_packet(Packets.OSU_MATCH_INVITE)
+async def match_invite(packet: MatchInvitePacket, session: Session) -> None:
+    if not session.match:
+        return
+
+    match = await repositories.matches.fetch_by_id(session.match)
+    assert match is not None
+
+    target = await repositories.sessions.fetch_by_id(packet.target_id)
+    if not target:
+        logging.warning(
+            f"{session!r} tried to invite user ID {packet.target_id} to a match while they are offline",
+        )
+        return
+
+    await usecases.sessions.enqueue_data(
+        target.id,
+        usecases.packets.match_invite(session, match, target.name),
+    )
+
+    logging.info(f"{session!r} invited {target!r} to their match")
+
+
+@register_packet(Packets.OSU_TOURNAMENT_MATCH_INFO_REQUEST)
+async def tourney_match_info(packet: MatchInfoPacket, session: Session) -> None:
+    match = await repositories.matches.fetch_by_id(packet.match_id)
+    assert match is not None
+
+    await usecases.sessions.enqueue_data(
+        session.id,
+        usecases.packets.update_match(match, send_pw=False),
+    )
+
+
+@register_packet(Packets.OSU_TOURNAMENT_JOIN_MATCH_CHANNEL)
+async def tourney_join_channel(
+    packet: JoinMatchChannelPacket,
+    session: Session,
+) -> None:
+    match = await repositories.matches.fetch_by_id(packet.match_id)
+    assert match is not None
+
+    if match.get_slot(session.id) is not None:
+        return
+
+    match_channel = await repositories.channels.fetch_by_name(
+        f"#multi_{packet.match_id}",
+    )
+    assert match_channel is not None
+
+    if (
+        await usecases.sessions.join_channel(session, match_channel)
+        and session.id not in match.tourney_clients
+    ):
+        match.tourney_clients.append(session.id)
+
+
+@register_packet(Packets.OSU_TOURNAMENT_LEAVE_MATCH_CHANNEL)
+async def tourney_leave_channel(
+    packet: LeaveMatchChannelPacket,
+    session: Session,
+) -> None:
+    match = await repositories.matches.fetch_by_id(packet.match_id)
+    assert match is not None
+
+    if match.get_slot(session.id) is not None:
+        return
+
+    await usecases.sessions.leave_channel(session, f"#multi_{packet.match_id}")
+    match.tourney_clients.remove(session.id)
+
+
+@register_packet(Packets.OSU_RECEIVE_UPDATES, allow_restricted=True)
+async def update_presence(packet: UpdatePresencePacket, session: Session) -> None:
+    if not 0 <= packet.value < 3:
+        logging.warning(
+            f"{session!r} tried to set their presence filter to {packet.value} (invalid)",
+        )
+        return
+
+    session.status.presence_filter = packet.value
+
+
+@register_packet(Packets.OSU_SET_AWAY_MESSAGE)
+async def set_away_message(packet: SetAwayMessagePacket, session: Session) -> None:
+    session.away_msg = packet.message.content

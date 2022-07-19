@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel
+from pydantic import validator
 
 import packets.typing
 
@@ -60,9 +61,19 @@ class FriendPacket(PacketModel):
 class StatsRequestPacket(PacketModel):
     session_ids: packets.typing.i32_list
 
+    @validator("session_ids", pre=True)
+    def valid_session_ids(cls, value) -> list[int]:
+        assert isinstance(value, list)
+        return value
+
 
 class PresenceRequestPacket(PacketModel):
     session_ids: packets.typing.i32_list
+
+    @validator("session_ids", pre=True)
+    def valid_session_ids(cls, value) -> list[int]:
+        assert isinstance(value, list)
+        return value
 
 
 class PresenceRequestAllPacket(PacketModel):
@@ -144,3 +155,35 @@ class SkipRequestPacket(PacketModel):
 
 class TransferHostPacket(PacketModel):
     slot_id: packets.typing.i32
+
+
+class ChangeTeamPacket(PacketModel):
+    _: bytes
+
+
+class ChangePasswordPacket(PacketModel):
+    match: packets.typing.OsuMatch
+
+
+class MatchInvitePacket(PacketModel):
+    target_id: packets.typing.i32
+
+
+class MatchInfoPacket(PacketModel):
+    match_id: packets.typing.i32
+
+
+class JoinMatchChannelPacket(PacketModel):
+    match_id: packets.typing.i32
+
+
+class LeaveMatchChannelPacket(PacketModel):
+    match_id: packets.typing.i32
+
+
+class UpdatePresencePacket(PacketModel):
+    value: packets.typing.i32
+
+
+class SetAwayMessagePacket(PacketModel):
+    message: packets.typing.Message

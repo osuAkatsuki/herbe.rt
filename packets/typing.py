@@ -80,17 +80,19 @@ class i32(osuType, int):
         return bytearray(struct.pack("<i", data))
 
 
-class i32_list(osuType, Sequence[int]):
+class i32_list(osuType, list[int]):
     @classmethod
-    def read(cls, packet: Packet) -> Sequence[int]:
+    def read(cls, packet: Packet) -> list[int]:
         length = i16.read(packet)
-        return struct.unpack(
-            f"<{'I' * length}",
-            packet.read(length * 4),
+        return list(
+            struct.unpack(
+                f"<{'I' * length}",
+                packet.read(length * 4),
+            ),
         )
 
     @classmethod
-    def write(cls, data: Collection[int]) -> bytearray:
+    def write(cls, data: list[int]) -> bytearray:
         buffer = bytearray(len(data).to_bytes(2, "little"))
 
         for item in data:
