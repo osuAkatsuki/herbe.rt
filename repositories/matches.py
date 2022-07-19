@@ -49,7 +49,7 @@ async def update(match: Match, lobby: bool = True) -> None:
         match_dump = json.dumps(match.dict())
 
         for redis_name, redis_key in (
-            ("akatsuki:herbert:matches:id", match.id),
+            ("akatsuki:herbert:matches:id", str(match.id)),
             ("akatsuki:herbert:matches:name", utils.make_safe_name(match.name)),
         ):
             await services.redis.hset(
@@ -82,7 +82,7 @@ async def delete(match: Match) -> None:
         f"akatsuki:herbert:locks:matches:{match.id}",
     ):
         for redis_name, redis_key in (
-            ("akatsuki:herbert:matches:id", match.id),
+            ("akatsuki:herbert:matches:id", str(match.id)),
             ("akatsuki:herbert:matches:name", utils.make_safe_name(match.name)),
         ):
             await services.redis.hdel(redis_name, redis_key)

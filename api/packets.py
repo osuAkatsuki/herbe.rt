@@ -740,13 +740,13 @@ async def change_match_settings(
 
         match.map_id = -1
         match.map_md5 = ""
-        match.map_name = ""
+        match.map_title = ""
     elif match.map_id == -1:
         # TODO: get/validate beatmap from api
 
         match.map_id = packet.match.map_id
         match.map_md5 = packet.match.map_md5
-        match.map_name = packet.match.map_name
+        match.map_title = packet.match.map_name
         match.mode = packet.match.mode
 
     if match.team_type != packet.match.team_type:

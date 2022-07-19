@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from constants.mode import Mode
 from models.user import Session
-from packets.typing import OsuMatch
 
 
 class SlotStatus(IntEnum):
@@ -146,10 +145,10 @@ class Match(BaseModel):
 
         return None
 
-    def copy(self, other: Match) -> None:
+    def copy_match(self, other: Match) -> None:
         self.map_id = other.map_id
         self.map_md5 = other.map_md5
-        self.map_name = other.map_name
+        self.map_title = other.map_title
         self.freemod = other.freemod
         self.mode = other.mode
         self.team_type = other.team_type
