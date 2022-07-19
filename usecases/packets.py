@@ -84,7 +84,7 @@ def menu_icon(icon_url: str, click_url: str) -> bytearray:
     return packet.serialise()
 
 
-def friends_list(friends_list: Collection[int]) -> bytearray:
+def friends_list(friends_list: list[int]) -> bytearray:
     packet = PacketWriter.from_id(Packets.CHO_FRIENDS_LIST)
     packet += i32_list.write(friends_list)
     return packet.serialise()

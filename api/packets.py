@@ -379,7 +379,7 @@ async def send_private_message(packet: SendMessagePacket, session: Session) -> N
     await usecases.sessions.receive_message(recipient_session, msg, session)
 
 
-@register_packet(Packets.OSU_CHANNEL_JOIN)
+@register_packet(Packets.OSU_CHANNEL_JOIN, allow_restricted=True)
 async def join_channel(packet: ChannelPacket, session: Session) -> None:
     if packet.channel_name in IGNORED_CHANNELS:
         return
@@ -406,7 +406,7 @@ async def join_channel(packet: ChannelPacket, session: Session) -> None:
     await usecases.sessions.join_channel(session, channel)
 
 
-@register_packet(Packets.OSU_CHANNEL_PART)
+@register_packet(Packets.OSU_CHANNEL_PART, allow_restricted=True)
 async def leave_channel(packet: ChannelPacket, session: Session) -> None:
     if packet.channel_name in IGNORED_CHANNELS:
         return

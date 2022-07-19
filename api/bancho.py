@@ -120,9 +120,11 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
 
     # TODO: hardware matches, tourney client sessions
     oui_info = {
-        await repositories.hardware.fetch_oui(adapter) for adapter in hardware.adapters
+        await repositories.hardware.fetch_oui(adapter)
+        for adapter in hardware.adapters
+        if adapter
     }
-    if not all(oui_info):
+    if not all(oui for oui in oui_info if oui is not None):
         logging.warning(f"{session!r} logged in with invalid adapters (no OUI match)")
         ...  # TODO: what to do on invalid hardware?
 
@@ -131,7 +133,7 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
     data += usecases.packets.bancho_privileges(session.bancho_privileges)
 
     for channel in await repositories.channels.fetch_all():
-        if channel.name == "#lobby":
+        if channel.name == "#lobby" or channel.hidden or channel.temp:
             continue
 
         if (
