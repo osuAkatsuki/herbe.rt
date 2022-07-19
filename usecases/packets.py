@@ -5,11 +5,11 @@ from functools import lru_cache
 from typing import Awaitable
 from typing import Callable
 from typing import Collection
-from typing import Sequence
 from typing import TypeVar
 
 from constants.packets import Packets
 from models.channel import Channel
+from models.match import Match
 from models.stats import Stats
 from models.user import Session
 from packets.models import PacketModel
@@ -20,6 +20,7 @@ from packets.typing import i32_list
 from packets.typing import i64
 from packets.typing import Message
 from packets.typing import OsuChannel
+from packets.typing import OsuMatch
 from packets.typing import String
 from packets.typing import u8
 from packets.writer import PacketWriter
@@ -106,7 +107,14 @@ def join_channel(channel: str) -> bytearray:
 def channel_info(channel: Channel) -> bytearray:
     packet = PacketWriter.from_id(Packets.CHO_CHANNEL_INFO)
 
-    osu_channel = OsuChannel(channel.name, channel.description, len(channel.members))
+    if channel.name.startswith("#multi_"):
+        channel_name = "#multiplayer"
+    elif channel.name.startswith("#spec_"):
+        channel_name = "#spectator"
+    else:
+        channel_name = channel.name
+
+    osu_channel = OsuChannel(channel_name, channel.description, len(channel.members))
     packet += osu_channel.serialise()
 
     return packet.serialise()
@@ -114,8 +122,15 @@ def channel_info(channel: Channel) -> bytearray:
 
 @lru_cache(maxsize=8)
 def channel_kick(channel: str) -> bytearray:
+    if channel.startswith("#multi_"):
+        channel_name = "#multiplayer"
+    elif channel.startswith("#spec_"):
+        channel_name = "#spectator"
+    else:
+        channel_name = channel
+
     packet = PacketWriter.from_id(Packets.CHO_CHANNEL_KICK)
-    packet += String.write(channel)
+    packet += String.write(channel_name)
     return packet.serialise()
 
 
@@ -235,4 +250,128 @@ def private_message_blocked(recipient_name: str) -> bytearray:
 def target_silenced(recipient_name: str) -> bytearray:
     packet = PacketWriter.from_id(Packets.CHO_TARGET_IS_SILENCED)
     packet += String.write(recipient_name)
+    return packet.serialise()
+
+
+def write_match(match: Match) -> OsuMatch:
+    return OsuMatch(
+        match.id,
+        match.in_progress,
+        match.mods,
+        match.password if match.password else "",
+        match.name,
+        match.map_name,
+        match.map_id if match.map_id else 0,
+        match.map_md5 if match.map_md5 else "",
+        [slot.session_id for slot in match.slots if slot.session_id],
+        match.win_condition,
+        match.team_type,
+        match.freemod,
+        match.seed,
+        [slot.status for slot in match.slots],
+        [slot.team for slot in match.slots],
+        [slot.mods for slot in match.slots],
+        match.mode,
+        match.host_id,
+    )
+
+
+def update_match(match: Match, send_pw: bool = True) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_UPDATE_MATCH)
+
+    osu_match = write_match(match)
+
+    packet += osu_match.serialise(send_pw)
+    return packet.serialise()
+
+
+def match_start(match: Match) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_START)
+
+    osu_match = write_match(match)
+
+    packet += osu_match.serialise()
+    return packet.serialise()
+
+
+def new_match(match: Match) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_NEW_MATCH)
+
+    osu_match = write_match(match)
+
+    packet += osu_match.serialise()
+    return packet.serialise()
+
+
+@cache
+def match_join_fail() -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_JOIN_FAIL)
+    return packet.serialise()
+
+
+def match_join_success(match: Match) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_JOIN_SUCCESS)
+
+    osu_match = write_match(match)
+
+    packet += osu_match.serialise()
+    return packet.serialise()
+
+
+@cache
+def dispose_match(match_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_DISPOSE_MATCH)
+    packet += i32.write(match_id)
+    return packet.serialise()
+
+
+@cache
+def match_transfer_host() -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_TRANSFER_HOST)
+    return packet.serialise()
+
+
+@cache
+def match_complete() -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_COMPLETE)
+    return packet.serialise()
+
+
+@cache
+def match_all_players_loaded() -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_ALL_PLAYERS_LOADED)
+    return packet.serialise()
+
+
+@cache
+def match_player_failed(slot_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_PLAYER_FAILED)
+    packet += i32.write(slot_id)
+    return packet.serialise()
+
+
+@cache
+def match_player_skipped(user_id: int) -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_PLAYER_SKIPPED)
+    packet += i32.write(user_id)
+    return packet.serialise()
+
+
+@cache
+def match_skip() -> bytearray:
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_SKIP)
+    return packet.serialise()
+
+
+def match_invite(sender: Session, match: Match, target_name: str) -> bytearray:
+    invite_text = f"Join my multiplayer match: {match.embed}"
+
+    packet = PacketWriter.from_id(Packets.CHO_MATCH_INVITE)
+    packet += Message.write(
+        sender.name,
+        invite_text,
+        target_name,
+        sender.id,
+    )
+
     return packet.serialise()

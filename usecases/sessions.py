@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
 
 import repositories.accounts
 import repositories.channels
+import repositories.matches
 import repositories.sessions
 import services
 import usecases.accounts
@@ -12,6 +14,10 @@ import usecases.packets
 import usecases.sessions
 from constants.privileges import Privileges
 from models.channel import Channel
+from models.match import Match
+from models.match import MatchTeam
+from models.match import MatchTeamType
+from models.match import SlotStatus
 from models.user import Session
 from objects.redis_lock import RedisLock
 from packets.typing import Message
@@ -229,3 +235,108 @@ async def remove_friend(session: Session, target_session: Session) -> None:
     )
 
     logging.info(f"{session!r} removed {target_session!r} from their friend list")
+
+
+async def join_match(
+    session: Session,
+    match: Match,
+    password: Optional[str] = None,
+) -> bool:
+    if session.match:
+        logging.warning(
+            f"{session!r} tried to join match ID {match.id} while already being in match ID {session.match}",
+        )
+        await enqueue_data(session.id, usecases.packets.match_join_fail())
+        return False
+
+    if session.id in match.tourney_clients:
+        await enqueue_data(session.id, usecases.packets.match_join_fail())
+        return False
+
+    if session.id == match.host_id:
+        slot_id = 0
+    else:
+        if match.password and password != match.password:
+            await enqueue_data(session.id, usecases.packets.match_join_fail())
+            return False
+
+        if slot_id := match.get_next_free_slot_idx() is None:
+            await enqueue_data(session.id, usecases.packets.match_join_fail())
+            return False
+
+    match_channel = await repositories.channels.fetch_by_name(f"#multi_{match.id}")
+    assert match_channel is not None
+
+    await join_channel(session, match_channel)
+
+    if "#lobby" in session.channels:
+        await leave_channel(session, "#lobby")
+
+    slot = match.slots[slot_id]
+
+    if match.team_type in (MatchTeamType.TEAM_VS, MatchTeamType.TAG_TEAM_VS):
+        slot.team = MatchTeam.RED
+
+    slot.status = SlotStatus.NOT_READY
+    slot.session_id = session.id
+
+    session.match = match.id
+
+    await enqueue_data(session.id, usecases.packets.match_join_success(match))
+    await repositories.matches.update(match)
+
+    logging.info(f"{session!r} joined match {match!r}")
+    return True
+
+
+async def leave_match(session: Session, match: Match) -> None:
+    if not session.match:
+        logging.warning(f"{session!r} tried to leave a match without being in one")
+        return
+
+    slot = match.get_slot(session.id)
+    assert slot is not None
+
+    if slot.status == SlotStatus.LOCKED:
+        new_status = SlotStatus.LOCKED
+    else:
+        new_status = SlotStatus.OPEN
+
+    slot.reset(new_status)
+
+    await leave_channel(session, f"#multi_{match.id}")
+
+    if all(slot.empty for slot in match.slots):
+        logging.info(f"Disposing match {match!r}")
+
+        await repositories.matches.delete(match)
+
+        lobby = await repositories.channels.fetch_by_name("#lobby")
+        assert lobby is not None
+
+        await usecases.channels.enqueue_data(
+            lobby,
+            usecases.packets.dispose_match(match.id),
+        )
+    else:
+        if session.id == match.host_id:
+            for slot in match.slots:
+                if slot.status & SlotStatus.HAS_USER:
+                    assert slot.session_id is not None
+                    match.host_id = slot.session_id
+
+                    await enqueue_data(
+                        slot.session_id,
+                        usecases.packets.match_transfer_host(),
+                    )
+
+                    break
+
+        if session.id in match.refs:
+            match.refs.remove(session.id)
+
+        await repositories.matches.update(match)
+
+    session.match = None
+
+    logging.info(f"{session!r} left match {match!r}")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Optional
 from typing import Sequence
 
 import repositories.channels
@@ -41,6 +42,18 @@ async def remove_user(channel_name: str, session_id: int) -> None:
         await repositories.channels.update(channel)
 
 
+async def enqueue_data(
+    channel: Channel,
+    data: bytearray,
+    recipients: Optional[Sequence[int]] = None,
+) -> None:
+    if recipients is None:
+        recipients = channel.members
+
+    for recipient_id in recipients:
+        await usecases.sessions.enqueue_data(recipient_id, data)
+
+
 async def send_message(
     channel: Channel,
     message_content: str,
@@ -51,15 +64,22 @@ async def send_message(
     if not to_self:
         to_send.remove(sender.id)
 
-    await send_message_selective(channel.name, message_content, sender, to_send)
+    await send_message_selective(channel, message_content, sender, to_send)
 
 
 async def send_message_selective(
-    channel_name: str,
+    channel: Channel,
     message_content: str,
     sender: Session,
     recipients: Sequence[int],
 ) -> None:
+    if channel.name.startswith("#multi_"):
+        channel_name = "#multiplayer"
+    elif channel.name.startswith("#spec_"):
+        channel_name = "#spectator"
+    else:
+        channel_name = channel.name
+
     message_packet = usecases.packets.send_message(
         Message(
             sender.name,
@@ -69,5 +89,4 @@ async def send_message_selective(
         ),
     )
 
-    for recipient_id in recipients:
-        await usecases.sessions.enqueue_data(recipient_id, message_packet)
+    await enqueue_data(channel, message_packet, recipients)

@@ -71,3 +71,76 @@ class PresenceRequestAllPacket(PacketModel):
 
 class ToggleDMPacket(PacketModel):
     value: packets.typing.i32
+
+
+class LobbyPacket(PacketModel):
+    _: bytes
+
+
+class MatchPacket(PacketModel):
+    match: packets.typing.OsuMatch
+
+
+class JoinMatchPacket(PacketModel):
+    match_id: packets.typing.i32
+    password: packets.typing.String
+
+
+class LeaveMatchPacket(PacketModel):
+    _: bytes
+
+
+class ChangeSlotPacket(PacketModel):
+    slot_id: packets.typing.i32
+
+
+class MatchReadyPacket(PacketModel):
+    _: bytes
+
+
+class LockSlotPacket(PacketModel):
+    slot_id: packets.typing.i32
+
+
+class ChangeMatchSettingsPacket(PacketModel):
+    match: packets.typing.OsuMatch
+
+
+class StartMatchPacket(PacketModel):
+    _: bytes
+
+
+class MatchScoreUpdatePacket(PacketModel):
+    data: bytes
+
+
+class MatchCompletePacket(PacketModel):
+    _: bytes
+
+
+class MatchLoadCompletePacket(PacketModel):
+    _: bytes
+
+
+class MissingBeatmapPacket(PacketModel):
+    _: bytes
+
+
+class UnreadyPacket(PacketModel):
+    _: bytes
+
+
+class PlayerFailedPacket(PacketModel):
+    _: bytes
+
+
+class HasBeatmapPacket(PacketModel):
+    _: bytes
+
+
+class SkipRequestPacket(PacketModel):
+    _: bytes
+
+
+class TransferHostPacket(PacketModel):
+    slot_id: packets.typing.i32
