@@ -61,15 +61,16 @@ class PacketArray:
             yield packet, handler
 
     def _split_data(self) -> None:
-        while self.data:
-            packet_id, length = parse_header(self.data)
+        with memoryview(self.data) as data_view:
+            while data_view:
+                packet_id, length = parse_header(data_view)
 
-            if packet_id not in self.packet_map.keys():
-                self.data = self.data[7 + length :]
-                continue
+                if packet_id not in self.packet_map.keys():
+                    data_view = data_view[7 + length :]
+                    continue
 
-            packet_data = self.data[: 7 + length]
-            packet = Packet(packet_data)
-            self.packets.append(packet)
+                packet_data = data_view[: 7 + length]
+                packet = Packet(packet_data)
+                self.packets.append(packet)
 
-            self.data = self.data[7 + length :]
+                data_view = data_view[7 + length :]
