@@ -7,7 +7,7 @@ from models.stats import Stats
 
 
 async def fetch(user_id: int, mode: Mode) -> Stats:
-    db_stats = await services.database.fetch_one(
+    db_stats = await services.read_database.fetch_one(
         (
             "SELECT ranked_score_{m} ranked_score, total_score_{m} total_score, pp_{m} pp, avg_accuracy_{m} accuracy, "
             "playcount_{m} playcount, playtime_{m} playtime, max_combo_{m} max_combo, total_hits_{m} total_hits, "

@@ -5,6 +5,23 @@ from starlette.datastructures import Secret
 
 cfg = Config(".env")
 
+READ_DB_USER = cfg('READ_DB_USER')
+READ_DB_PASS = cfg('READ_DB_PASS')
+READ_DB_HOST = cfg('READ_DB_HOST')
+READ_DB_PORT = cfg('READ_DB_PORT', cast=int)
+READ_DB_NAME = cfg('READ_DB_NAME')
+READ_DB_DSN = 'postgresql://{}:{}@{}:{}/{}?sslmode=prefer'.format(
+    READ_DB_USER, READ_DB_PASS, READ_DB_HOST, READ_DB_PORT, READ_DB_NAME
+)
+
+WRITE_DB_USER = cfg('WRITE_DB_USER')
+WRITE_DB_PASS = cfg('WRITE_DB_PASS')
+WRITE_DB_HOST = cfg('WRITE_DB_HOST')
+WRITE_DB_PORT = cfg('WRITE_DB_PORT', cast=int)
+WRITE_DB_NAME = cfg('WRITE_DB_NAME')
+WRITE_DB_DSN = 'postgresql://{}:{}@{}:{}/{}?sslmode=prefer'.format(
+    WRITE_DB_USER, WRITE_DB_PASS, WRITE_DB_HOST, WRITE_DB_PORT, WRITE_DB_NAME
+)
 
 DB_DSN: Secret = cfg("DB_DSN", cast=Secret)
 REDIS_DSN: Secret = cfg("REDIS_DSN", cast=Secret)
