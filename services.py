@@ -36,7 +36,7 @@ async def connect_services() -> None:
         databases.Database(settings.READ_DB_DSN),
     )
     redis = await ctx_stack.enter_async_context(
-        aioredis.from_url(str(settings.REDIS_DSN)),
+        aioredis.from_url(settings.REDIS_DSN),
     )
 
 

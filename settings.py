@@ -23,8 +23,9 @@ WRITE_DB_DSN = 'postgresql://{}:{}@{}:{}/{}?sslmode=prefer'.format(
     WRITE_DB_USER, WRITE_DB_PASS, WRITE_DB_HOST, WRITE_DB_PORT, WRITE_DB_NAME
 )
 
-DB_DSN: Secret = cfg("DB_DSN", cast=Secret)
-REDIS_DSN: Secret = cfg("REDIS_DSN", cast=Secret)
+REDIS_HOST = cfg('REDIS_HOST')
+REDIS_PORT = cfg('REDIS_PORT', cast=int)
+REDIS_DSN = 'redis://{}:{}'.format(REDIS_HOST, REDIS_PORT)
 
 LOG_LEVEL: int = cfg("LOG_LEVEL", cast=int, default=30)
 
