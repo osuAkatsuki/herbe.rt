@@ -31,80 +31,80 @@ PACKETS: dict[Packets, PacketHandler] = {}
 
 
 @cache
-def user_id(id: int) -> bytearray:
+def user_id(id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_USER_ID)
     packet += i32.write(id)
     return packet.serialise()
 
 
 @cache
-def version_update_forced() -> bytearray:
+def version_update_forced() -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_VERSION_UPDATE_FORCED)
     return packet.serialise()
 
 
 @lru_cache(maxsize=4)
-def notification(msg: str) -> bytearray:
+def notification(msg: str) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_NOTIFICATION)
     packet += String.write(msg)
     return packet.serialise()
 
 
 @cache
-def protocol_version(version: int) -> bytearray:
+def protocol_version(version: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_PROTOCOL_VERSION)
     packet += i32.write(version)
     return packet.serialise()
 
 
 @cache
-def bancho_privileges(priv: int) -> bytearray:
+def bancho_privileges(priv: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_PRIVILEGES)
     packet += i32.write(priv)
     return packet.serialise()
 
 
 @cache
-def channel_info_end() -> bytearray:
+def channel_info_end() -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_CHANNEL_INFO_END)
     return packet.serialise()
 
 
 @cache
-def restart_server(time: int) -> bytearray:
+def restart_server(time: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_RESTART)
     packet += i32.write(time)
     return packet.serialise()
 
 
 @cache
-def menu_icon(icon_url: str, click_url: str) -> bytearray:
+def menu_icon(icon_url: str, click_url: str) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MAIN_MENU_ICON)
     packet += String.write(f"{icon_url}|{click_url}")
     return packet.serialise()
 
 
-def friends_list(friends_list: list[int]) -> bytearray:
+def friends_list(friends_list: list[int]) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_FRIENDS_LIST)
     packet += i32_list.write(friends_list)
     return packet.serialise()
 
 
 @cache
-def silence_end(time: int) -> bytearray:
+def silence_end(time: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_SILENCE_END)
     packet += i32.write(time)
     return packet.serialise()
 
 
 @lru_cache(maxsize=8)
-def join_channel(channel: str) -> bytearray:
+def join_channel(channel: str) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_CHANNEL_JOIN_SUCCESS)
     packet += String.write(channel)
     return packet.serialise()
 
 
-def channel_info(channel: Channel) -> bytearray:
+def channel_info(channel: Channel) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_CHANNEL_INFO)
 
     if channel.name.startswith("#multi_"):
@@ -121,7 +121,7 @@ def channel_info(channel: Channel) -> bytearray:
 
 
 @lru_cache(maxsize=8)
-def channel_kick(channel: str) -> bytearray:
+def channel_kick(channel: str) -> bytes:
     if channel.startswith("#multi_"):
         channel_name = "#multiplayer"
     elif channel.startswith("#spec_"):
@@ -134,7 +134,7 @@ def channel_kick(channel: str) -> bytearray:
     return packet.serialise()
 
 
-def user_presence(session: Session, stats: Stats) -> bytearray:
+def user_presence(session: Session, stats: Stats) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_USER_PRESENCE)
 
     packet += i32.write(session.id)
@@ -149,7 +149,7 @@ def user_presence(session: Session, stats: Stats) -> bytearray:
     return packet.serialise()
 
 
-def user_stats(session: Session, stats: Stats) -> bytearray:
+def user_stats(session: Session, stats: Stats) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_USER_STATS)
 
     if stats.pp > 0x7FFF:
@@ -177,19 +177,19 @@ def user_stats(session: Session, stats: Stats) -> bytearray:
 
 
 @cache
-def user_restricted() -> bytearray:
+def user_restricted() -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_ACCOUNT_RESTRICTED)
     return packet.serialise()
 
 
-def send_message(message: Message) -> bytearray:
+def send_message(message: Message) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_SEND_MESSAGE)
     packet += message.serialise()
     return packet.serialise()
 
 
 @cache
-def logout(user_id: int) -> bytearray:
+def logout(user_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_USER_LOGOUT)
 
     packet += i32.write(user_id)
@@ -199,55 +199,55 @@ def logout(user_id: int) -> bytearray:
 
 
 @cache
-def spectator_joined(user_id: int) -> bytearray:
+def spectator_joined(user_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_FELLOW_SPECTATOR_JOINED)
     packet += i32.write(user_id)
     return packet.serialise()
 
 
 @cache
-def host_spectator_joined(user_id: int) -> bytearray:
+def host_spectator_joined(user_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_SPECTATOR_JOINED)
     packet += i32.write(user_id)
     return packet.serialise()
 
 
 @cache
-def spectator_left(user_id: int) -> bytearray:
+def spectator_left(user_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_FELLOW_SPECTATOR_LEFT)
     packet += i32.write(user_id)
     return packet.serialise()
 
 
 @cache
-def host_spectator_left(user_id: int) -> bytearray:
+def host_spectator_left(user_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_SPECTATOR_LEFT)
     packet += i32.write(user_id)
     return packet.serialise()
 
 
-def spectate_frames(frames: bytes) -> bytearray:
+def spectate_frames(frames: bytes) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_SPECTATE_FRAMES)
     packet += frames
     return packet.serialise()
 
 
 @cache
-def cant_spectate(user_id: int) -> bytearray:
+def cant_spectate(user_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_SPECTATOR_CANT_SPECTATE)
     packet += i32.write(user_id)
     return packet.serialise()
 
 
 @lru_cache(maxsize=8)
-def private_message_blocked(recipient_name: str) -> bytearray:
+def private_message_blocked(recipient_name: str) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_USER_DM_BLOCKED)
     packet += String.write(recipient_name)
     return packet.serialise()
 
 
 @lru_cache(maxsize=8)
-def target_silenced(recipient_name: str) -> bytearray:
+def target_silenced(recipient_name: str) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_TARGET_IS_SILENCED)
     packet += String.write(recipient_name)
     return packet.serialise()
@@ -276,7 +276,7 @@ def write_match(match: Match) -> OsuMatch:
     )
 
 
-def update_match(match: Match, send_pw: bool = True) -> bytearray:
+def update_match(match: Match, send_pw: bool = True) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_UPDATE_MATCH)
 
     osu_match = write_match(match)
@@ -285,7 +285,7 @@ def update_match(match: Match, send_pw: bool = True) -> bytearray:
     return packet.serialise()
 
 
-def match_start(match: Match) -> bytearray:
+def match_start(match: Match) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_START)
 
     osu_match = write_match(match)
@@ -294,7 +294,7 @@ def match_start(match: Match) -> bytearray:
     return packet.serialise()
 
 
-def new_match(match: Match) -> bytearray:
+def new_match(match: Match) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_NEW_MATCH)
 
     osu_match = write_match(match)
@@ -304,12 +304,12 @@ def new_match(match: Match) -> bytearray:
 
 
 @cache
-def match_join_fail() -> bytearray:
+def match_join_fail() -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_JOIN_FAIL)
     return packet.serialise()
 
 
-def match_join_success(match: Match) -> bytearray:
+def match_join_success(match: Match) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_JOIN_SUCCESS)
 
     osu_match = write_match(match)
@@ -319,51 +319,51 @@ def match_join_success(match: Match) -> bytearray:
 
 
 @cache
-def dispose_match(match_id: int) -> bytearray:
+def dispose_match(match_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_DISPOSE_MATCH)
     packet += i32.write(match_id)
     return packet.serialise()
 
 
 @cache
-def match_transfer_host() -> bytearray:
+def match_transfer_host() -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_TRANSFER_HOST)
     return packet.serialise()
 
 
 @cache
-def match_complete() -> bytearray:
+def match_complete() -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_COMPLETE)
     return packet.serialise()
 
 
 @cache
-def match_all_players_loaded() -> bytearray:
+def match_all_players_loaded() -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_ALL_PLAYERS_LOADED)
     return packet.serialise()
 
 
 @cache
-def match_player_failed(slot_id: int) -> bytearray:
+def match_player_failed(slot_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_PLAYER_FAILED)
     packet += i32.write(slot_id)
     return packet.serialise()
 
 
 @cache
-def match_player_skipped(user_id: int) -> bytearray:
+def match_player_skipped(user_id: int) -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_PLAYER_SKIPPED)
     packet += i32.write(user_id)
     return packet.serialise()
 
 
 @cache
-def match_skip() -> bytearray:
+def match_skip() -> bytes:
     packet = PacketWriter.from_id(Packets.CHO_MATCH_SKIP)
     return packet.serialise()
 
 
-def match_invite(sender: Session, match: Match, target_name: str) -> bytearray:
+def match_invite(sender: Session, match: Match, target_name: str) -> bytes:
     invite_text = f"Join my multiplayer match: {match.embed}"
 
     packet = PacketWriter.from_id(Packets.CHO_MATCH_INVITE)

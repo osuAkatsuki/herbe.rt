@@ -12,7 +12,7 @@ from models.match import SlotStatus
 
 async def enqueue_data(
     match_id: int,
-    data: bytearray,
+    data: bytes,
     lobby: bool = True,
     immune: Optional[list[int]] = None,
 ) -> None:

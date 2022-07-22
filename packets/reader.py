@@ -9,7 +9,7 @@ from constants.packets import Packets
 from models.user import Session
 
 
-def parse_header(data: bytearray) -> tuple[Packets, int]:
+def parse_header(data: bytes) -> tuple[Packets, int]:
     header = data[:7]
     unpacked_data = struct.unpack("<HxI", header)
 
@@ -17,7 +17,7 @@ def parse_header(data: bytearray) -> tuple[Packets, int]:
 
 
 class Packet:
-    def __init__(self, data: bytearray) -> None:
+    def __init__(self, data: bytes) -> None:
         self.data = data
 
         self.packet_id: Packets = Packets(0)
@@ -32,7 +32,7 @@ class Packet:
     def offset(self, count: int) -> None:
         self.data = self.data[count:]
 
-    def read(self, count: int) -> bytearray:
+    def read(self, count: int) -> bytes:
         data = self.data[:count]
         self.offset(count)
 
@@ -45,7 +45,7 @@ PacketWrapper = Callable[[Packet, Session], Awaitable[None]]
 class PacketArray:
     def __init__(
         self,
-        data: bytearray,
+        data: bytes,
         packet_map: dict[Packets, PacketWrapper],
     ) -> None:
         self.data = data

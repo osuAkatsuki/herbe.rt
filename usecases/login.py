@@ -3,7 +3,7 @@ from __future__ import annotations
 from models.login import LoginData
 
 
-def parse_login_data(data: bytearray) -> LoginData:
+def parse_login_data(data: bytes) -> LoginData:
     (
         username,
         password_md5,

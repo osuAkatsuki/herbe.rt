@@ -159,7 +159,7 @@ async def remove_from_session_list(session: Session) -> None:
         )
 
 
-async def enqueue_data(data: bytearray) -> None:
+async def enqueue_data(data: bytes) -> None:
     for session in await fetch_all():
         await usecases.sessions.enqueue_data(session.id, data)
 
