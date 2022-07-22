@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import NamedTuple
 
 import services
 from constants.mode import Mode

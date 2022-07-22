@@ -3,9 +3,7 @@ from __future__ import annotations
 import struct
 from abc import abstractmethod
 from typing import Any
-from typing import Collection
 from typing import Optional
-from typing import Sequence
 
 from constants.mode import Mode
 from models.match import MatchTeam

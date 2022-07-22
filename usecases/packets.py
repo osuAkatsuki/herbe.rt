@@ -4,7 +4,6 @@ from functools import cache
 from functools import lru_cache
 from typing import Awaitable
 from typing import Callable
-from typing import Collection
 from typing import TypeVar
 
 from constants.packets import Packets

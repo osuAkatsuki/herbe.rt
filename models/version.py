@@ -1,6 +1,6 @@
 from __future__ import annotations
+import datetime
 
-from datetime import date
 from typing import Any
 from typing import Literal
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 
 class OsuVersion(BaseModel):
-    date: date
+    date: datetime.date
 
     stream: Literal["stable", "beta", "cuttingedge", "tourney", "dev"] = "stable"
     revision: int = 0
