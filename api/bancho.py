@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import date
 from datetime import timedelta
 from typing import Literal
 from typing import Optional
