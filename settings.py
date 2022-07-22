@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from starlette.config import Config
-from starlette.datastructures import Secret
 
 cfg = Config(".env")
 
@@ -27,7 +26,13 @@ REDIS_HOST = cfg('REDIS_HOST')
 REDIS_PORT = cfg('REDIS_PORT', cast=int)
 REDIS_DSN = 'redis://{}:{}'.format(REDIS_HOST, REDIS_PORT)
 
-LOG_LEVEL: int = cfg("LOG_LEVEL", cast=int, default=30)
+LOG_LEVEL = cfg("LOG_LEVEL", cast=int, default=30)
 
-RESTRICTION_MESSAGE: str = cfg("RESTRICTION_MESSAGE")
-FROZEN_MESSAGE: str = cfg("FROZEN_MESSAGE")
+RESTRICTION_MESSAGE = cfg(
+    "RESTRICTION_MESSAGE",
+    default="Your account is currently in restricted mode.",
+)
+FROZEN_MESSAGE = cfg(
+    "FROZEN_MESSAGE",
+    default="Your account is currently frozen, and will be restricted in {time_until_restriction}.",
+)
