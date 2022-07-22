@@ -22,7 +22,7 @@ class PacketWriter:
     def write(self, data: bytes) -> None:
         self.data += data
 
-    def serialise(self) -> bytearray:
+    def serialise(self) -> bytes:
         return_data = bytearray()
 
         return_data += i16.write(self.packet_id.value)

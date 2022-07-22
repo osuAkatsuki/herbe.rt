@@ -15,11 +15,11 @@ from models.match import SlotStatus
 from packets.reader import Packet
 
 
-def read_int(data: bytearray, signed: bool = True) -> int:
+def read_int(data: bytes, signed: bool = True) -> int:
     return int.from_bytes(data, "little", signed=signed)
 
 
-def read_float(data: bytearray) -> float:
+def read_float(data: bytes) -> float:
     return struct.unpack("<f", data)[0]
 
 
@@ -36,8 +36,8 @@ class i8(osuType, int):
         return read_int(packet.read(1))
 
     @classmethod
-    def write(cls, data: int) -> bytearray:
-        return bytearray(struct.pack("<b", data))
+    def write(cls, data: int) -> bytes:
+        return struct.pack("<b", data)
 
 
 class u8(osuType, int):
@@ -46,8 +46,8 @@ class u8(osuType, int):
         return read_int(packet.read(1), signed=False)
 
     @classmethod
-    def write(cls, data: int) -> bytearray:
-        return bytearray(struct.pack("<B", data))
+    def write(cls, data: int) -> bytes:
+        return struct.pack("<B", data)
 
 
 class i16(osuType, int):
@@ -56,8 +56,8 @@ class i16(osuType, int):
         return read_int(packet.read(2))
 
     @classmethod
-    def write(cls, data: int) -> bytearray:
-        return bytearray(struct.pack("<h", data))
+    def write(cls, data: int) -> bytes:
+        return struct.pack("<h", data)
 
 
 class u16(osuType, int):
@@ -66,8 +66,8 @@ class u16(osuType, int):
         return read_int(packet.read(2), signed=False)
 
     @classmethod
-    def write(cls, data: int) -> bytearray:
-        return bytearray(struct.pack("<H", data))
+    def write(cls, data: int) -> bytes:
+        return struct.pack("<H", data)
 
 
 class i32(osuType, int):
@@ -76,8 +76,8 @@ class i32(osuType, int):
         return read_int(packet.read(4))
 
     @classmethod
-    def write(cls, data: int) -> bytearray:
-        return bytearray(struct.pack("<i", data))
+    def write(cls, data: int) -> bytes:
+        return struct.pack("<i", data)
 
 
 class i32_list(osuType, list[int]):
@@ -92,7 +92,7 @@ class i32_list(osuType, list[int]):
         )
 
     @classmethod
-    def write(cls, data: list[int]) -> bytearray:
+    def write(cls, data: list[int]) -> bytes:
         buffer = bytearray(len(data).to_bytes(2, "little"))
 
         for item in data:
@@ -107,8 +107,8 @@ class u32(osuType, int):
         return read_int(packet.read(4), signed=False)
 
     @classmethod
-    def write(cls, data: int) -> bytearray:
-        return bytearray(struct.pack("<I", data))
+    def write(cls, data: int) -> bytes:
+        return struct.pack("<I", data)
 
 
 class f32(osuType, float):
@@ -117,8 +117,8 @@ class f32(osuType, float):
         return read_float(packet.read(4))
 
     @classmethod
-    def write(cls, data: float) -> bytearray:
-        return bytearray(struct.pack("<f", data))
+    def write(cls, data: float) -> bytes:
+        return struct.pack("<f", data)
 
 
 class i64(osuType, int):
@@ -127,8 +127,8 @@ class i64(osuType, int):
         return read_int(packet.read(8))
 
     @classmethod
-    def write(cls, data: int) -> bytearray:
-        return bytearray(struct.pack("<q", data))
+    def write(cls, data: int) -> bytes:
+        return struct.pack("<q", data)
 
 
 class f64(osuType, float):
@@ -137,8 +137,8 @@ class f64(osuType, float):
         return read_float(packet.read(8))
 
     @classmethod
-    def write(cls, data: float) -> bytearray:
-        return bytearray(struct.pack("<d", data))
+    def write(cls, data: float) -> bytes:
+        return struct.pack("<d", data)
 
 
 class String(osuType, str):
@@ -161,12 +161,12 @@ class String(osuType, str):
         return packet.read(length).decode()
 
     @classmethod
-    def write(cls, data: str) -> bytearray:
+    def write(cls, data: str) -> bytes:
         encoded_string = data.encode()
         length = len(encoded_string)
 
         if length == 0:
-            return bytearray(b"\x00")
+            return b"\x00"
 
         buffer = bytearray(b"\x0b")
         val = length
@@ -213,14 +213,14 @@ class Message(osuType):
         content: str,
         recipient_username: str,
         sender_id: int,
-    ) -> bytearray:
+    ) -> bytes:
         message = Message(sender_username, content, recipient_username, sender_id)
 
         return message.serialise()
 
-    def serialise(self) -> bytearray:
-        data = bytearray(String.write(self.sender_username))
-
+    def serialise(self) -> bytes:
+        data = bytearray()
+        data += String.write(self.sender_username)
         data += String.write(self.content)
         data += String.write(self.recipient_username)
         data += i32.write(self.sender_id)
@@ -253,14 +253,14 @@ class OsuChannel(osuType):
         name: str,
         topic: str,
         player_count: int,
-    ) -> bytearray:
+    ) -> bytes:
         channel = OsuChannel(name, topic, player_count)
 
         return channel.serialise()
 
-    def serialise(self) -> bytearray:
-        data = bytearray(String.write(self.name))
-
+    def serialise(self) -> bytes:
+        data = bytearray()
+        data += String.write(self.name)
         data += String.write(self.topic)
         data += i32.write(self.player_count)
 
@@ -366,25 +366,23 @@ class ScoreFrame(osuType):
 
         return score_frame.serialise()
 
-    def serialise(self) -> bytearray:
-        return bytearray(
-            SCOREFRAME_FMT.pack(
-                self.time,
-                self.id,
-                self.num300,
-                self.num100,
-                self.num50,
-                self.num_geki,
-                self.num_katu,
-                self.num_miss,
-                self.total_score,
-                self.current_combo,
-                self.max_combo,
-                self.perfect,
-                self.current_hp,
-                self.tag_byte,
-                self.score_v2,
-            ),
+    def serialise(self) -> bytes:
+        return SCOREFRAME_FMT.pack(
+            self.time,
+            self.id,
+            self.num300,
+            self.num100,
+            self.num50,
+            self.num_geki,
+            self.num_katu,
+            self.num_miss,
+            self.total_score,
+            self.current_combo,
+            self.max_combo,
+            self.perfect,
+            self.current_hp,
+            self.tag_byte,
+            self.score_v2,
         )
 
 
@@ -425,9 +423,10 @@ class ReplayFrame(osuType):
         frame = ReplayFrame(button_state, taiko_byte, x, y, time)
         return frame.serialise()
 
-    def serialise(self) -> bytearray:
-        data = bytearray(u8.write(self.button_state))
+    def serialise(self) -> bytes:
+        data = bytearray()
 
+        data += u8.write(self.button_state)
         data += u8.write(self.taiko_byte)
         data += u8.write(self.taiko_byte)
         data += f32.write(self.x)
@@ -445,7 +444,7 @@ class ReplayFrameBundle(osuType):
         action: int,
         extra: int,  # ?
         sequence: int,  # ?
-        raw_data: bytearray,
+        raw_data: bytes,
     ) -> None:
         self.frames = frames
         self.score_frame = score_frame
@@ -475,8 +474,8 @@ class ReplayFrameBundle(osuType):
         action: int,
         extra: int,  # ?
         sequence: int,  # ?
-        raw_data: bytearray,
-    ) -> bytearray:
+        raw_data: bytes,
+    ) -> bytes:
         frame_bundle = ReplayFrameBundle(
             frames,
             score_frame,
@@ -488,9 +487,10 @@ class ReplayFrameBundle(osuType):
 
         return frame_bundle.serialise()
 
-    def serialise(self) -> bytearray:
-        data = bytearray(i32.write(self.extra))
+    def serialise(self) -> bytes:
+        data = bytearray()
 
+        data += i32.write(self.extra)
         data += u16.write(len(self.frames))
         for frame in self.frames:
             data += frame.serialise()
@@ -641,9 +641,10 @@ class OsuMatch(osuType):
 
         return match.serialise()
 
-    def serialise(self, send_pw: bool = True) -> bytearray:
-        data = bytearray(u16.write(self.id))
+    def serialise(self, send_pw: bool = True) -> bytes:
+        data = bytearray()
 
+        data += u16.write(self.id)
         data += i8.write(int(self.in_progress))
         data += i8.write(0)  # ?
         data += i32.write(self.mods)

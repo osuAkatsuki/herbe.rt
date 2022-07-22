@@ -169,8 +169,8 @@ def register_packet(
                 _type = typing.cast(str, _type)
 
                 if _type == "bytes":
-                    data[field] = bytes(packet.data)
-                    packet.data.clear()
+                    data[field] = packet.data
+                    packet.data = b""
                 else:
                     data_type_class = get_packet_data_type_from_name(_type.strip("'"))
                     if not data_type_class:
@@ -190,7 +190,7 @@ def register_packet(
     return decorator
 
 
-async def handle_packet_data(data: bytearray, session: Session) -> None:
+async def handle_packet_data(data: bytes, session: Session) -> None:
     packet_map = HANDLERS
     if not session.privileges & Privileges.USER_PUBLIC:
         packet_map = RESTRICTED_HANDLERS

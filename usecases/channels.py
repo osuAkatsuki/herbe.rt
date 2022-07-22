@@ -25,8 +25,8 @@ async def remove_user(channel_name: str, session_id: int) -> None:
         channel_info_packet = usecases.packets.channel_info(channel)
 
         if channel.temp:
-            for target in channel.members:
-                await usecases.sessions.enqueue_data(target, channel_info_packet)
+            for target_id in channel.members:
+                await usecases.sessions.enqueue_data(target_id, channel_info_packet)
         else:
             for target_session in await repositories.sessions.fetch_all():
                 if (
@@ -44,13 +44,13 @@ async def remove_user(channel_name: str, session_id: int) -> None:
 
 async def enqueue_data(
     channel: Channel,
-    data: bytearray,
-    recipients: Optional[Sequence[int]] = None,
+    data: bytes,
+    recipient_ids: Optional[Sequence[int]] = None,
 ) -> None:
-    if recipients is None:
-        recipients = channel.members
+    if recipient_ids is None:
+        recipient_ids = channel.members
 
-    for recipient_id in recipients:
+    for recipient_id in recipient_ids:
         await usecases.sessions.enqueue_data(recipient_id, data)
 
 

@@ -23,12 +23,12 @@ from objects.redis_lock import RedisLock
 from packets.typing import Message
 
 
-async def enqueue_data(user_id: int, data: bytearray) -> None:
+async def enqueue_data(user_id: int, data: bytes) -> None:
     async with RedisLock(
         services.redis,
         f"akatsuki:herbert:locks:queues:{user_id}",
     ):
-        await services.redis.append(f"akatsuki:herbert:queues:{user_id}", bytes(data))
+        await services.redis.append(f"akatsuki:herbert:queues:{user_id}", data)
 
 
 async def dequeue_data(user_id: int) -> bytes:

@@ -48,15 +48,15 @@ async def bancho_request(
     osu_token: Optional[str] = Header(None),
     user_agent: Literal["osu!"] = Header(...),
 ):
-    body = bytearray(await request.body())
+    body = await request.body()
     geolocation = usecases.geolocation.from_headers(request.headers)
 
     if not osu_token:
-        login_data = await login(body, geolocation)
+        login_response = await login(body, geolocation)
 
         return Response(
-            content=login_data.body,
-            headers={"cho-token": login_data.token},
+            content=login_response.body,
+            headers={"cho-token": login_response.token},
         )
 
     session = await repositories.sessions.fetch_by_token(osu_token)
@@ -67,7 +67,7 @@ async def bancho_request(
     return Response(content=await usecases.sessions.dequeue_data(session.id))
 
 
-async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
+async def login(body: bytes, geolocation: Geolocation) -> LoginResponse:
     start = time.perf_counter_ns()
     login_data = usecases.login.parse_login_data(body)
 
@@ -128,7 +128,8 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
         logging.warning(f"{session!r} logged in with invalid adapters (no OUI match)")
         ...  # TODO: what to do on invalid hardware?
 
-    data = bytearray(usecases.packets.protocol_version(19))
+    data = bytearray()
+    data += usecases.packets.protocol_version(19)
     data += usecases.packets.user_id(session.id)
     data += usecases.packets.bancho_privileges(session.bancho_privileges)
 
@@ -207,4 +208,4 @@ async def login(body: bytearray, geolocation: Geolocation) -> LoginResponse:
         f"{session!r} logged in with osu! version {session.client_version!r} from {geolocation.country.acronym.upper()} in {formatted_time}",
     )
 
-    return LoginResponse(body=bytes(data), token=session.token)
+    return LoginResponse(body=data, token=session.token)
