@@ -71,7 +71,7 @@ async def delete(channel: Channel) -> None:
 async def initialise_channels() -> None:
     current_channels = await fetch_all()
 
-    db_channels = await services.database.fetch_all(
+    db_channels = await services.read_database.fetch_all(
         "SELECT name, description, public_read, public_write, temp, hidden FROM bancho_channels",
     )
     for db_channel in db_channels:

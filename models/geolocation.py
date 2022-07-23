@@ -22,8 +22,8 @@ class Country(BaseModel):
 
 
 class Geolocation(BaseModel):
-    long: float
-    lat: float
+    longitude: float
+    latitude: float
     country: Country
 
     ip: Optional[str] = None
@@ -34,7 +34,7 @@ class Geolocation(BaseModel):
         **kwargs,
     ) -> dict[str, Any]:
         return {
-            "long": self.long,
-            "lat": self.lat,
+            "longitude": self.longitude,
+            "latitude": self.latitude,
             "country": self.country.dict(),
         }

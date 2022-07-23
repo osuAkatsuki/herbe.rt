@@ -141,8 +141,8 @@ def user_presence(session: Session, stats: Stats) -> bytes:
     packet += u8.write(session.utc_offset + 24)
     packet += u8.write(session.geolocation.country.code)
     packet += u8.write(session.bancho_privileges | (session.status.mode.as_vn << 5))
-    packet += f32.write(session.geolocation.long)
-    packet += f32.write(session.geolocation.lat)
+    packet += f32.write(session.geolocation.longitude)
+    packet += f32.write(session.geolocation.latitude)
     packet += i32.write(stats.rank)
 
     return packet.serialise()

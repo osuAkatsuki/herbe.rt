@@ -213,7 +213,7 @@ async def add_friend(session: Session, target_session: Session) -> None:
         return
 
     session.friends.append(target_session.id)
-    await services.database.execute(
+    await services.write_database.execute(
         "INSERT INTO users_relationships (user1, user2) VALUES (:session_id, :target_session_id)",
         {"session_id": session.id, "target_session_id": target_session.id},
     )
@@ -229,7 +229,7 @@ async def remove_friend(session: Session, target_session: Session) -> None:
         return
 
     session.friends.remove(target_session.id)
-    await services.database.execute(
+    await services.write_database.execute(
         "DELETE FROM users_relationships WHERE user1 = :session_id AND user2 = :target_session_id",
         {"session_id": session.id, "target_session_id": target_session.id},
     )

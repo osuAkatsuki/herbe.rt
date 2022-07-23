@@ -7,15 +7,15 @@ import logging
 import aiohttp
 import aioredis
 import databases
-import geoip2.database
 
 import settings
 
 http: aiohttp.ClientSession
-database: databases.Database
-redis: aioredis.Redis
 
-geolocation: geoip2.database.Reader = geoip2.database.Reader("ext/geoloc.mmdb")
+write_database: databases.Database
+read_database: databases.Database
+
+redis: aioredis.Redis
 
 tasks: set[asyncio.Task] = set()
 
@@ -23,14 +23,17 @@ ctx_stack: contextlib.AsyncExitStack = contextlib.AsyncExitStack()
 
 
 async def connect_services() -> None:
-    global http, database, redis
+    global http, write_database, read_database, redis
 
     http = await ctx_stack.enter_async_context(aiohttp.ClientSession())
-    database = await ctx_stack.enter_async_context(
-        databases.Database(str(settings.DB_DSN)),
+    write_database = await ctx_stack.enter_async_context(
+        databases.Database(settings.WRITE_DB_DSN),
+    )
+    read_database = await ctx_stack.enter_async_context(
+        databases.Database(settings.READ_DB_DSN),
     )
     redis = await ctx_stack.enter_async_context(
-        aioredis.from_url(str(settings.REDIS_DSN)),
+        aioredis.from_url(settings.REDIS_DSN),
     )
 
 

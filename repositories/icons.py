@@ -7,7 +7,7 @@ from models.icon import MenuIcon
 
 
 async def fetch_all() -> list[MenuIcon]:
-    db_icons = await services.database.fetch_all(
+    db_icons = await services.read_database.fetch_all(
         "SELECT * FROM main_menu_icons WHERE is_current = 1",
     )
     return [
