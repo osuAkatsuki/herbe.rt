@@ -26,6 +26,12 @@ REDIS_HOST = cfg('REDIS_HOST')
 REDIS_PORT = cfg('REDIS_PORT', cast=int)
 REDIS_DSN = 'redis://{}:{}'.format(REDIS_HOST, REDIS_PORT)
 
+AMQP_HOST = cfg('AMQP_HOST')
+AMQP_PORT = cfg('AMQP_PORT', cast=int)
+AMQP_USER = cfg('AMQP_USER')
+AMQP_PASS = cfg('AMQP_PASS')
+# TODO: not sure if we need DSN
+
 LOG_LEVEL = cfg("LOG_LEVEL", cast=int, default=30)
 
 RESTRICTION_MESSAGE = cfg(
