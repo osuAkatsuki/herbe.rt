@@ -2,37 +2,23 @@ from __future__ import annotations
 
 from typing import Mapping
 
-import services
 from models.geolocation import Country
 from models.geolocation import Geolocation
 
-CACHE: dict[str, Geolocation] = {}
-
 
 def from_headers(headers: Mapping[str, str]) -> Geolocation:
-    if not (ip := headers.get("CF-Connecting-IP")):
-        forwards = headers["X-Forwarded-For"].split(",")
+    ip = headers["X-Real-IP"]  # generally cloudflare's CF-Connecting-IP header
 
-        if len(forwards) != 1:
-            ip = forwards[0]
-        else:
-            ip = headers["X-Real-IP"]
+    # https://nginx.org/en/docs/http/ngx_http_geoip_module.html
+    iso_code = headers["X-Country-Code"]  # $geoip_city_country_code
+    latitude = headers["X-Latitude"]  # $geoip_latitude
+    longitude = headers["X-Longitude"]  # $geoip_longitude
 
-    if geolocation := CACHE.get(ip):
-        return geolocation
-
-    city = services.geolocation.city(ip)
-
-    assert city.country.iso_code is not None
-    assert city.location.longitude is not None
-    assert city.location.latitude is not None
-
-    iso_code = city.country.iso_code.lower()
     country = Country.from_iso(iso_code)
 
     geolocation = Geolocation(
-        long=city.location.longitude,
-        lat=city.location.latitude,
+        longitude=float(longitude),
+        latitude=float(latitude),
         country=country,
         ip=ip,
     )
