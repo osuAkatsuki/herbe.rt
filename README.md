@@ -1,2 +1,2 @@
 # herbe.rt
-Bancho server for osu!Akatsuki
+Bancho server for Akatsuki
