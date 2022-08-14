@@ -24,7 +24,7 @@ def main() -> int:
         server_header=False,
         date_header=False,
         host="127.0.0.1",
-        port=settings.SERVER_PORT,
+        port=80,
     )
 
     return 0
